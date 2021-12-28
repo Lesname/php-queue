@@ -5,7 +5,8 @@
     - apt-get install -y unzip
     - apt-get install -y git
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-    - composer update --prefer-dist
+    - composer config gitlab-token.gitlab.com $CI_JOB_TOKEN
+    - composer update --no-progress --prefer-dist
 
 .php80:
   image: php:8.0
