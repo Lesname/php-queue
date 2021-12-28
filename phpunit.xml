@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+        bootstrap="vendor/autoload.php"
+        colors="true"
+>
+    <php>
+        <ini name="assert.exception" value="1" />
+    </php>
+    <testsuites>
+        <testsuite name="Less test suite">
+            <directory>test/</directory>
+        </testsuite>
+    </testsuites>
+    <coverage>
+        <include>
+            <directory suffix=".php">src/</directory>
+        </include>
+    </coverage>
+</phpunit>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="BS PHPCS">
+    <config name="installed_paths" value="./vendor/slevomat/coding-standard"/>
+
+    <file>./src</file>
+    <file>./test</file>
+
+    <!-- Include the whole PEAR standard -->
+    <rule ref="PEAR">
+        <!-- Most comments are useless -->
+        <exclude name="PEAR.Commenting.ClassComment"/>
+        <exclude name="PEAR.Commenting.FunctionComment"/>
+        <exclude name="PEAR.Commenting.FileComment"/>
+
+        <exclude name="Generic.Commenting.DocComment"/>
+
+        <exclude name="Generic.Files.LineLength.TooLong"/>
+
+        <exclude name="PEAR.WhiteSpace.ScopeClosingBrace.Line"/>
+
+        <exclude name="PEAR.ControlStructures.MultiLineCondition.SpacingAfterOpenBrace" />
+        <exclude name="PEAR.ControlStructures.MultiLineCondition.StartWithBoolean" />
+
+        <!-- No stupid underscore for private -->
+        <exclude name="PEAR.NamingConventions.ValidVariableName.PrivateNoUnderscore"/>
+        <exclude name="PEAR.NamingConventions.ValidFunctionName.PrivateNoUnderscore"/>
+    </rule>
+
+    <!-- Include PSR12 standard -->
+    <rule ref="PSR12">
+        <exclude name="PSR12.Files.FileHeader.SpacingAfterBlock" />
+
+        <exclude name="Squiz.WhiteSpace.ScopeClosingBrace.ContentBefore"/>
+    </rule>
+</ruleset>

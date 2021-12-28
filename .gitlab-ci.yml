@@ -1,12 +1,101 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
-# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/#customizing-settings
-# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
+.base:
+  timeout: 5 minutes
+  before_script:
+    - apt-get update || true
+    - apt-get install -y unzip
+    - apt-get install -y git
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    - composer update --prefer-dist
+
+.php80:
+  image: php:8.0
+  extends: .base
+
+.php81:
+  image: php:8.1
+  extends: .base
+
 stages:
-- test
-sast:
-  stage: test
-include:
-- template: Security/SAST.gitlab-ci.yml
+  - quality
+  - deploy
+
+# PHPStan
+
+phpstan80:
+  extends: .php80
+  stage: quality
+  except:
+    - main
+  script:
+    - ./vendor/bin/phpstan analyse -c phpstan.neon
+
+phpstan81:
+  extends: .php81
+  stage: quality
+  except:
+    - main
+  script:
+    - ./vendor/bin/phpstan analyse -c phpstan.neon
+
+# PHP code sniffer
+
+phpcs80:
+  extends: .php80
+  stage: quality
+  except:
+    - main
+  script:
+    - ./vendor/bin/phpcs --standard=./phpcs.xml
+
+phpcs81:
+  extends: .php81
+  stage: quality
+  except:
+    - main
+  script:
+    - ./vendor/bin/phpcs --standard=./phpcs.xml
+
+# PHPUnit
+
+phpunit80:
+  extends: .php80
+  stage: quality
+  except:
+    - main
+  script:
+    - ./vendor/bin/phpunit -c phpunit.xml --do-not-cache-result
+
+phpunit81:
+  extends: .php81
+  stage: quality
+  except:
+    - main
+  script:
+    - ./vendor/bin/phpunit -c phpunit.xml --do-not-cache-result
+
+# Psalm
+
+psalm80:
+  extends: .php80
+  stage: quality
+  except:
+    - main
+  script:
+    - ./vendor/bin/psalm
+
+psalm81:
+  extends: .php81
+  stage: quality
+  except:
+    - main
+  script:
+    - ./vendor/bin/psalm
+
+# Deploy
+
+deploy_composer:
+  only:
+    - tags
+  stage: deploy
+  script:
+    - curl --data tag=${CI_COMMIT_TAG} "https://__token__:${REGISTERY_TOKEN}@gitlab.com/api/v4/projects/${CI_PROJECT_ID}/packages/composer"
