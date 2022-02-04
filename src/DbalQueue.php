@@ -38,7 +38,7 @@ final class DbalQueue implements Queue
 )
 SQL;
 
-    public function __construct(private Connection $connection)
+    public function __construct(private readonly Connection $connection)
     {}
 
     /**

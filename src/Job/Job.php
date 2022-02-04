@@ -17,9 +17,9 @@ final class Job extends AbstractCompositeValueObject
      * @param array<mixed> $data
      */
     public function __construct(
-        public string $id,
-        public Property\Name $name,
-        public Property\Priority $priority,
-        public array $data,
+        public readonly string $id,
+        public readonly Property\Name $name,
+        public readonly Property\Priority $priority,
+        public readonly array $data,
     ) {}
 }
