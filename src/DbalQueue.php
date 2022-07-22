@@ -14,6 +14,7 @@ use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
 use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\Date\Timestamp;
+use LessValueObject\Number\Int\Time\Second;
 use LessValueObject\Number\Int\Unsigned;
 use LessValueObject\String\Exception\TooLong;
 use LessValueObject\String\Exception\TooShort;
@@ -97,9 +98,21 @@ final class DbalQueue implements Queue
      * @throws TooShort
      * @throws \Exception
      */
-    public function reserve(): ?Job
+    public function reserve(?Second $timeout = null): ?Job
     {
+        if ($timeout) {
+            $till = time() + $timeout->getValue();
+        } else {
+            $till = null;
+        }
+
         $job = $this->findProcessableJob();
+
+        while ($job === null && $till !== null && $till < time()) {
+            sleep(1);
+
+            $job = $this->findProcessableJob();
+        }
 
         return $job && $this->markJobReserved($job->id)
             ? $job
