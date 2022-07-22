@@ -8,10 +8,17 @@ use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Query\QueryBuilder;
 use JsonException;
 use LessQueue\DbalQueue;
-use LessQueue\Job\Job;
+use LessQueue\Job\DbalJob;
 use LessQueue\Job\Property\Name;
 use LessQueue\Job\Property\Priority;
+use LessValueObject\Number\Exception\MaxOutBounds;
+use LessValueObject\Number\Exception\MinOutBounds;
+use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\Date\Timestamp;
+use LessValueObject\Number\Int\Unsigned;
+use LessValueObject\String\Exception\TooLong;
+use LessValueObject\String\Exception\TooShort;
+use LessValueObject\String\Format\Exception\NotFormat;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -21,6 +28,9 @@ final class DbalQueueTest extends TestCase
 {
     /**
      * @throws Exception
+     * @throws MaxOutBounds
+     * @throws MinOutBounds
+     * @throws PrecisionOutBounds
      */
     public function testPut(): void
     {
@@ -70,26 +80,15 @@ final class DbalQueueTest extends TestCase
         $database = $this->createMock(Connection::class);
         $database
             ->expects(self::once())
-            ->method('lastInsertId')
-            ->willReturn('1');
-
-        $database
-            ->expects(self::once())
             ->method('createQueryBuilder')
             ->willReturn($builder);
 
         $queue = new DbalQueue($database);
 
-        $job = $queue->put($name, $data, $until, $priority);
-
-        self::assertSame('1', $job->id);
-        self::assertSame($priority, $job->priority);
-        self::assertSame($name, $job->name);
-        self::assertSame($data, $job->data);
+        $queue->publish($name, $data, $until, $priority);
     }
 
     /**
-     * @throws JsonException
      * @throws Exception
      */
     public function testPutDefault(): void
@@ -138,26 +137,22 @@ final class DbalQueueTest extends TestCase
         $database = $this->createMock(Connection::class);
         $database
             ->expects(self::once())
-            ->method('lastInsertId')
-            ->willReturn('1');
-
-        $database
-            ->expects(self::once())
             ->method('createQueryBuilder')
             ->willReturn($builder);
 
         $queue = new DbalQueue($database);
 
-        $job = $queue->put($name, $data);
-
-        self::assertSame('1', $job->id);
-        self::assertEquals(Priority::default(), $job->priority);
-        self::assertSame($name, $job->name);
-        self::assertSame($data, $job->data);
+        $queue->publish($name, $data);
     }
 
     /**
      * @throws Exception
+     * @throws MaxOutBounds
+     * @throws MinOutBounds
+     * @throws PrecisionOutBounds
+     * @throws TooLong
+     * @throws TooShort
+     * @throws NotFormat
      */
     public function testReserveNoJob(): void
     {
@@ -205,6 +200,12 @@ final class DbalQueueTest extends TestCase
 
     /**
      * @throws Exception
+     * @throws MaxOutBounds
+     * @throws MinOutBounds
+     * @throws NotFormat
+     * @throws PrecisionOutBounds
+     * @throws TooLong
+     * @throws TooShort
      */
     public function testReserveJob(): void
     {
@@ -243,6 +244,7 @@ final class DbalQueueTest extends TestCase
                     'name' => 'foo:bar',
                     'priority' => '4',
                     'data' => serialize(['fiz' => 'biz']),
+                    'attempt' => '3',
                 ],
             );
 
@@ -277,50 +279,7 @@ final class DbalQueueTest extends TestCase
             ->willReturnOnConsecutiveCalls($findBuilder, $reserveBuilder);
 
         $queue = new DbalQueue($connection);
-        $job = $queue->reserve();
-
-        self::assertSame('3', $job->id);
-        self::assertEquals(new Name('foo:bar'), $job->name);
-        self::assertEquals(new Priority(4), $job->priority);
-        self::assertSame(['fiz' => 'biz'], $job->data);
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function testDeleteViaId(): void
-    {
-        $builder = $this->createMock(QueryBuilder::class);
-        $builder
-            ->expects(self::once())
-            ->method('delete')
-            ->with('queue')
-            ->willReturn($builder);
-
-        $builder
-            ->expects(self::once())
-            ->method('executeStatement');
-
-        $builder
-            ->expects(self::once())
-            ->method('andWhere')
-            ->with('id = :id')
-            ->willReturn($builder);
-
-        $builder
-            ->expects(self::once())
-            ->method('setParameter')
-            ->with('id', '3')
-            ->willReturn($builder);
-
-        $connection = $this->createMock(Connection::class);
-        $connection
-            ->expects(self::once())
-            ->method('createQueryBuilder')
-            ->willReturn($builder);
-
-        $queue = new DbalQueue($connection);
-        $queue->delete('3');
+        $queue->reserve();
     }
 
     /**
@@ -357,11 +316,12 @@ final class DbalQueueTest extends TestCase
             ->method('createQueryBuilder')
             ->willReturn($builder);
 
-        $job = new Job(
+        $job = new DbalJob(
             '3',
             new Name('foo:bar'),
             Priority::default(),
             [],
+            new Unsigned(1),
         );
 
         $queue = new DbalQueue($connection);
@@ -402,11 +362,12 @@ final class DbalQueueTest extends TestCase
             ->method('createQueryBuilder')
             ->willReturn($builder);
 
-        $job = new Job(
+        $job = new DbalJob(
             '3',
             new Name('fiz:biz'),
             Priority::default(),
             [],
+            new Unsigned(2),
         );
 
         $queue = new DbalQueue($connection);
