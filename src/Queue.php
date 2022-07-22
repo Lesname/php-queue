@@ -16,11 +16,13 @@ interface Queue
      * @param Timestamp|null $until
      * @param Priority|null $priority
      */
-    public function put(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): Job;
+    public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void;
+
+    public function republish(Job $job): void;
 
     public function reserve(): ?Job;
 
-    public function delete(Job | string $job): void;
+    public function delete(Job $job): void;
 
     public function bury(Job $job): void;
 }
