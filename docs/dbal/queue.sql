@@ -14,15 +14,11 @@ CREATE TABLE IF NOT EXISTS queue
     reserved_release INT(11) UNSIGNED DEFAULT NULL,
     reserved_key VARCHAR(10) DEFAULT NULL,
 
-    `v_checksum` char(32) GENERATED ALWAYS AS (md5(`job_message`)) VIRTUAL,
-
     INDEX reserve (
                    job_state,
                    job_until,
                    job_priority
         ),
-
-    INDEX `check` (job_name, v_checksum),
 
     UNIQUE (reserved_key)
 )
