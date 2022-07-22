@@ -7,6 +7,7 @@ use LessQueue\Job\Job;
 use LessQueue\Job\Property\Name;
 use LessQueue\Job\Property\Priority;
 use LessValueObject\Number\Int\Date\Timestamp;
+use LessValueObject\Number\Int\Time\Second;
 
 interface Queue
 {
@@ -20,7 +21,7 @@ interface Queue
 
     public function republish(Job $job): void;
 
-    public function reserve(): ?Job;
+    public function reserve(?Second $timeout = null): ?Job;
 
     public function delete(Job $job): void;
 
