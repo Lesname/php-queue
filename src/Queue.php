@@ -19,7 +19,7 @@ interface Queue
      */
     public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void;
 
-    public function republish(Job $job): void;
+    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void;
 
     public function reserve(?Second $timeout = null): ?Job;
 
