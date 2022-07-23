@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS queue
 
     job_name VARCHAR(50) NOT NULL,
     job_state VARCHAR(10) NOT NULL,
-    job_message JSON NOT NULL,
+    job_data JSON NOT NULL,
     job_attempt TINYINT UNSIGNED NOT NULL DEFAULT 0,
 
     job_priority TINYINT NOT NULL,
@@ -14,15 +14,11 @@ CREATE TABLE IF NOT EXISTS queue
     reserved_release INT(11) UNSIGNED DEFAULT NULL,
     reserved_key VARCHAR(10) DEFAULT NULL,
 
-    `v_checksum` char(32) GENERATED ALWAYS AS (md5(`job_message`)) VIRTUAL,
-
     INDEX reserve (
                    job_state,
                    job_until,
                    job_priority
         ),
-
-    INDEX `check` (job_name, v_checksum),
 
     UNIQUE (reserved_key)
 )
