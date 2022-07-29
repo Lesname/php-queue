@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS queue
 
     job_name VARCHAR(50) NOT NULL,
     job_state VARCHAR(10) NOT NULL,
-    job_data JSON NOT NULL,
+    job_data TEXT NOT NULL,
     job_attempt TINYINT UNSIGNED NOT NULL DEFAULT 0,
 
     job_priority TINYINT NOT NULL,
