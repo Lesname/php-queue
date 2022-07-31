@@ -216,6 +216,7 @@ final class DbalQueue implements Queue
             ->set('reserved_on', 'unix_timestamp()')
             ->set('reserved_release', 'unix_timestamp() + 600')
             ->set('job_state', '"reserved"')
+            ->set('job_attempt', 'job_attempt + 1')
             ->andWhere('id = :id')
             ->setParameter('id', $id)
             ->executeStatement();
