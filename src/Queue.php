@@ -13,7 +13,7 @@ interface Queue
 {
     /**
      * @param Name $name
-     * @param array<string, mixed> $data
+     * @param array<mixed> $data
      * @param Timestamp|null $until
      * @param Priority|null $priority
      */
