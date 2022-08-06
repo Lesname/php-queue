@@ -27,7 +27,7 @@ final class DbalQueue implements Queue
     {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<mixed> $data
      *
      * @throws Exception
      */
@@ -108,8 +108,8 @@ final class DbalQueue implements Queue
 
         $job = $this->findProcessableJob();
 
-        while ($job === null && $till !== null && $till < time()) {
-            sleep(1);
+        while ($job === null && $till !== null && $till > time()) {
+            sleep(min(1, max(3, $till - time())));
 
             $job = $this->findProcessableJob();
         }
