@@ -27,7 +27,7 @@ final class DbalQueue implements Queue
     {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<mixed> $data
      *
      * @throws Exception
      */
