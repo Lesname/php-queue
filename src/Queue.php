@@ -4,26 +4,33 @@ declare(strict_types=1);
 namespace LessQueue;
 
 use LessQueue\Job\Job;
+use LessQueue\Job\Property\Identifier;
 use LessQueue\Job\Property\Name;
-use LessQueue\Job\Property\Priority;
+use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Int\Date\Timestamp;
-use LessValueObject\Number\Int\Time\Second;
 
 interface Queue
 {
     /**
-     * @param Name $name
      * @param array<mixed> $data
-     * @param Timestamp|null $until
-     * @param Priority|null $priority
      */
-    public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void;
+    public function publish(Name $name, array $data, ?Timestamp $until = null): void;
 
-    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void;
+    public function republish(Job $job, ?Timestamp $until = null): void;
 
-    public function reserve(?Second $timeout = null): ?Job;
+    /**
+     * @param callable(Job $job): void $callback
+     */
+    public function process(callable $callback, Vo\Timeout $timeout): void;
 
     public function delete(Job $job): void;
 
     public function bury(Job $job): void;
+
+    public function reanimate(Identifier $id, ?Timestamp $until = null): void;
+
+    /**
+     * @return array<Job>
+     */
+    public function getBuried(Paginate $paginate): array;
 }
