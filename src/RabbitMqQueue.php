@@ -210,6 +210,8 @@ final class RabbitMqQueue implements Queue
     }
 
     /**
+     * @param array<mixed> $result
+     *
      * @throws MaxOutBounds
      * @throws MinOutBounds
      * @throws NotFormat
@@ -224,10 +226,13 @@ final class RabbitMqQueue implements Queue
         assert(is_string($result['job_data']));
         assert(is_int($result['job_attempt']));
 
+        $unserialized = unserialize($result['job_data']);
+        assert(is_array($unserialized));
+
         return new Job(
             new Identifier($result['id']),
             new Name($result['job_name']),
-            unserialize($result['job_data']),
+            $unserialized,
             new Unsigned($result['job_attempt']),
         );
     }
