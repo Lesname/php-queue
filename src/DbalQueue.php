@@ -99,7 +99,7 @@ final class DbalQueue implements Queue
         do {
             $job = $this->findProcessableJob();
 
-            if ($job) {
+            if ($job && $this->markJobReserved($job->id)) {
                 $callback($job);
             }
 
