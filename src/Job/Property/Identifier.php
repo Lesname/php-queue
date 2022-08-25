@@ -6,7 +6,7 @@ namespace LessQueue\Job\Property;
 use LessValueObject\Number\Int\AbstractIntValueObject;
 
 /**
- * @psalm-immutable 
+ * @psalm-immutable
  */
 final class Identifier extends AbstractIntValueObject
 {
@@ -19,7 +19,7 @@ final class Identifier extends AbstractIntValueObject
     }
 
     /**
-     * @psalm-pure 
+     * @psalm-pure
      */
     public static function getMaxValue(): int
     {
