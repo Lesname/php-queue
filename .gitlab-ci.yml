@@ -6,7 +6,7 @@
     - apt-get install -y git
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
     - composer config gitlab-token.gitlab.com gitlab+deploy-token-713049 $REGISTERY_READ
-    - docker-php-ext-install sockets
+    - docker-php-ext-enable sockets
     - composer update --no-progress --prefer-dist
 
 .php81:
