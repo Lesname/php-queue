@@ -6,23 +6,24 @@ namespace LessQueue;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Query\QueryBuilder;
-use LessQueue\Job\DbalJob;
+use LessDatabase\Query\Builder\Applier\PaginateApplier;
 use LessQueue\Job\Job;
+use LessQueue\Job\Property\Identifier;
 use LessQueue\Job\Property\Name;
-use LessQueue\Job\Property\Priority;
+use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
 use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\Date\Timestamp;
-use LessValueObject\Number\Int\Time\Second;
 use LessValueObject\Number\Int\Unsigned;
 use LessValueObject\String\Exception\TooLong;
 use LessValueObject\String\Exception\TooShort;
 use LessValueObject\String\Format\Exception\NotFormat;
-use RuntimeException;
 
 final class DbalQueue implements Queue
 {
+    private const TABLE = 'queue_job';
+
     public function __construct(private readonly Connection $connection)
     {}
 
@@ -31,28 +32,24 @@ final class DbalQueue implements Queue
      *
      * @throws Exception
      */
-    public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void
+    public function publish(Name $name, array $data, ?Timestamp $until = null): void
     {
-        $priority ??= Priority::default();
-
         $builder = $this->connection->createQueryBuilder();
         $builder
-            ->insert('queue')
+            ->insert(self::TABLE)
             ->values(
                 [
-                    'job_state' => '"ready"',
-                    'job_name' => ':job_name',
-                    'job_data' => ':job_data',
-                    'job_priority' => ':job_priority',
-                    'job_until' => ':job_until',
+                    'state' => '"ready"',
+                    'name' => ':name',
+                    'data' => ':data',
+                    'until' => ':until',
                 ],
             )
             ->setParameters(
                 [
-                    'job_name' => $name,
-                    'job_data' => serialize($data),
-                    'job_priority' => $priority,
-                    'job_until' => $until,
+                    'name' => $name,
+                    'data' => serialize($data),
+                    'until' => $until,
                 ],
             )
             ->executeStatement();
@@ -61,28 +58,26 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
-    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void
+    public function republish(Job $job, ?Timestamp $until = null): void
     {
         $builder = $this->connection->createQueryBuilder();
         $builder
-            ->insert('queue')
+            ->insert(self::TABLE)
             ->values(
                 [
-                    'job_state' => '"ready"',
-                    'job_name' => ':job_name',
-                    'job_data' => ':job_data',
-                    'job_priority' => ':job_priority',
-                    'job_until' => ':job_until',
-                    'job_attempt' => ':job_attempt',
+                    'state' => '"ready"',
+                    'name' => ':name',
+                    'data' => ':data',
+                    'until' => ':until',
+                    'attempt' => ':attempt',
                 ],
             )
             ->setParameters(
                 [
-                    'job_name' => $job->getName(),
-                    'job_data' => serialize($job->getData()),
-                    'job_priority' => ($priority ?? $job->getPriority())->getValue(),
-                    'job_until' => $until?->getValue(),
-                    'job_attempt' => $job->getAttempt()->getValue(),
+                    'name' => $job->name,
+                    'data' => serialize($job->data),
+                    'until' => $until,
+                    'attempt' => $job->attempt,
                 ],
             )
             ->executeStatement();
@@ -96,27 +91,22 @@ final class DbalQueue implements Queue
      * @throws PrecisionOutBounds
      * @throws TooLong
      * @throws TooShort
-     * @throws \Exception
      */
-    public function reserve(?Second $timeout = null): ?Job
+    public function process(callable $callback, Vo\Timeout $timeout): void
     {
-        if ($timeout) {
-            $till = time() + $timeout->getValue();
-        } else {
-            $till = null;
-        }
+        $till = time() + $timeout->getValue();
 
-        $job = $this->findProcessableJob();
-
-        while ($job === null && $till !== null && $till > time()) {
-            sleep(min(1, max(3, $till - time())));
-
+        do {
             $job = $this->findProcessableJob();
-        }
 
-        return $job && $this->markJobReserved($job->id)
-            ? $job
-            : null;
+            if ($job) {
+                $callback($job);
+            }
+
+            if ($job === null && $till > time()) {
+                sleep(min(1, max(3, $till - time())));
+            }
+        } while ($till > time());
     }
 
     /**
@@ -124,13 +114,9 @@ final class DbalQueue implements Queue
      */
     public function delete(Job $job): void
     {
-        if (!$job instanceof DbalJob) {
-            throw new RuntimeException();
-        }
-
         $builder = $this->connection->createQueryBuilder();
         $builder
-            ->delete('queue')
+            ->delete(self::TABLE)
             ->andWhere('id = :id')
             ->setParameter('id', $job->id)
             ->executeStatement();
@@ -141,19 +127,79 @@ final class DbalQueue implements Queue
      */
     public function bury(Job $job): void
     {
-        if (!$job instanceof DbalJob) {
-            throw new RuntimeException();
-        }
-
         $builder = $this->connection->createQueryBuilder();
         $builder
-            ->update('queue')
+            ->update(self::TABLE)
             ->andWhere('id = :id')
             ->setParameter('id', $job->id)
-            ->set('job_state', '"buried"')
+            ->set('state', '"buried"')
             ->set('reserved_on', 'null')
             ->set('reserved_release', 'null')
             ->executeStatement();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function reanimate(Identifier $id, ?Timestamp $until = null): void
+    {
+        $builder = $this->connection->createQueryBuilder();
+        $builder
+            ->update(self::TABLE)
+            ->andWhere('id = :id')
+            ->setParameter('id', $id)
+            ->set('until', ':until')
+            ->setParameter('until', $until)
+            ->set('state', '"ready"')
+            ->set('reserved_on', 'null')
+            ->set('reserved_release', 'null')
+            ->executeStatement();
+    }
+
+    /**
+     * @return array<Job>
+     *
+     * @throws Exception
+     * @throws MaxOutBounds
+     * @throws MinOutBounds
+     * @throws NotFormat
+     * @throws PrecisionOutBounds
+     * @throws TooLong
+     * @throws TooShort
+     */
+    public function getBuried(Paginate $paginate): array
+    {
+        $builder = $this->connection->createQueryBuilder();
+        (new PaginateApplier($paginate))->apply($builder);
+        $results = $builder
+            ->addSelect('id')
+            ->addSelect('name as name')
+            ->addSelect('data as data')
+            ->addSelect('attempt as attempt')
+            ->from(self::TABLE)
+            ->andWhere('state = "buried"')
+            ->addOrderBy('id', 'ASC')
+            ->fetchAllAssociative();
+
+        return array_map(
+            function (array $result): Job {
+                assert(is_string($result['id']) || is_int($result['id']), 'Expected string id');
+                assert(is_string($result['name']), 'Expected string name');
+                assert(is_string($result['attempt']) || is_int($result['attempt']), 'Expected attempt');
+
+                assert(is_string($result['data']), 'Expected string data');
+                $data = unserialize($result['data']);
+                assert(is_array($data), 'Expected unserialized array for data');
+
+                return new Job(
+                    new Identifier((int)$result['id']),
+                    new Name($result['name']),
+                    $data,
+                    new Unsigned((int)$result['attempt']),
+                );
+            },
+            $results,
+        );
     }
 
     /**
@@ -165,37 +211,33 @@ final class DbalQueue implements Queue
      * @throws TooShort
      * @throws NotFormat
      */
-    private function findProcessableJob(): ?DbalJob
+    private function findProcessableJob(): ?Job
     {
         $builder = $this->connection->createQueryBuilder();
         $this->applyProcessableWhere($builder);
         $result = $builder
             ->addSelect('id')
-            ->addSelect('job_name as name')
-            ->addSelect('job_priority as priority')
-            ->addSelect('job_data as data')
-            ->addSelect('job_attempt as attempt')
-            ->from('queue')
-            ->addOrderBy('job_priority', 'DESC')
-            ->addOrderBy('job_until', 'ASC')
+            ->addSelect('name as name')
+            ->addSelect('data as data')
+            ->addSelect('attempt as attempt')
+            ->from(self::TABLE)
+            ->addOrderBy('until', 'ASC')
             ->addOrderBy('id', 'ASC')
             ->setMaxResults(1)
             ->fetchAssociative();
 
         if (is_array($result)) {
-            assert(is_string($result['id']) || is_int($result['id']), 'Expected string id');
+            assert(is_int($result['id']), 'Expected string id');
             assert(is_string($result['name']), 'Expected string name');
             assert(is_string($result['attempt']) || is_int($result['attempt']), 'Expected attempt');
-            assert(is_string($result['priority']) || is_int($result['priority']), 'Expected priority');
 
             assert(is_string($result['data']), 'Expected string data');
             $data = unserialize($result['data']);
             assert(is_array($data), 'Expected unserialized array for data');
 
-            return new DbalJob(
-                (string)$result['id'],
+            return new Job(
+                new Identifier($result['id']),
                 new Name($result['name']),
-                new Priority((int)$result['priority']),
                 $data,
                 new Unsigned((int)$result['attempt']),
             );
@@ -207,16 +249,16 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
-    private function markJobReserved(string $id): bool
+    private function markJobReserved(Identifier $id): bool
     {
         $builder = $this->connection->createQueryBuilder();
         $this->applyProcessableWhere($builder);
         $updateResult = $builder
-            ->update('queue')
+            ->update(self::TABLE)
             ->set('reserved_on', 'unix_timestamp()')
             ->set('reserved_release', 'unix_timestamp() + 600')
-            ->set('job_state', '"reserved"')
-            ->set('job_attempt', 'job_attempt + 1')
+            ->set('state', '"reserved"')
+            ->set('attempt', 'attempt + 1')
             ->andWhere('id = :id')
             ->setParameter('id', $id)
             ->executeStatement();
@@ -229,17 +271,17 @@ final class DbalQueue implements Queue
         $where = <<<'SQL'
 (
     (
-        job_state = 'ready' 
+        state = 'ready' 
         AND 
         (
-            job_until IS NULL 
+            `until` IS NULL 
             OR 
-            job_until < unix_timestamp()
+            `until` < unix_timestamp()
         )
     ) 
     OR
     (
-        job_state = 'reserved'
+        state = 'reserved'
         AND
         reserved_release < unix_timestamp()
     )

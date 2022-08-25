@@ -3,21 +3,21 @@ declare(strict_types=1);
 
 namespace LessQueue\Job;
 
+use LessValueObject\Composite\AbstractCompositeValueObject;
 use LessValueObject\Number\Int\Unsigned;
 
 /**
  * @psalm-immutable
  */
-interface Job
+final class Job extends AbstractCompositeValueObject
 {
-    public function getName(): Property\Name;
-
-    public function getPriority(): Property\Priority;
-
     /**
-     * @return array<mixed>
+     * @param array<mixed> $data
      */
-    public function getData(): array;
-
-    public function getAttempt(): Unsigned;
+    public function __construct(
+        public readonly Property\Identifier $id,
+        public readonly Property\Name $name,
+        public readonly array $data,
+        public readonly Unsigned $attempt,
+    ) {}
 }
