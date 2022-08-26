@@ -34,7 +34,7 @@ final class RabbitMqQueue implements Queue
     private const QUEUE = 'less.queue';
     private const EXCHANGE = 'base_exchange';
 
-    private const TABLE = 'buried_queue_job';
+    private const TABLE = 'queue_job_buried';
 
     public function __construct(
         private readonly AMQPStreamConnection $connection,
