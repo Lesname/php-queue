@@ -33,7 +33,8 @@ final class RabbitMqQueue implements Queue
 
     private const QUEUE = 'less.queue';
     private const EXCHANGE = 'base_exchange';
-    private const TABLE = 'buried_queue';
+
+    private const TABLE = 'buried_queue_job';
 
     public function __construct(
         private readonly AMQPStreamConnection $connection,
@@ -131,9 +132,9 @@ final class RabbitMqQueue implements Queue
     {
         $applier = new InsertValuesApplier(
             [
-                'job_name' => $job->name,
-                'job_data' => serialize($job->data),
-                'job_attempt' => $job->attempt,
+                'name' => $job->name,
+                'data' => serialize($job->data),
+                'attempt' => $job->attempt,
             ],
         );
         $applier
@@ -158,9 +159,9 @@ final class RabbitMqQueue implements Queue
         $selectBuilder = $this->database->createQueryBuilder();
         $result = $selectBuilder
             ->addSelect('id')
-            ->addSelect('job_name')
-            ->addSelect('job_data')
-            ->addSelect('job_attempt')
+            ->addSelect('name')
+            ->addSelect('data')
+            ->addSelect('attempt')
             ->from(self::TABLE)
             ->andWhere('id = :id')
             ->setParameter('id', $id)
@@ -197,9 +198,9 @@ final class RabbitMqQueue implements Queue
 
         $results = $builder
             ->addSelect('id')
-            ->addSelect('job_name')
-            ->addSelect('job_data')
-            ->addSelect('job_attempt')
+            ->addSelect('name')
+            ->addSelect('data')
+            ->addSelect('attempt')
             ->from(self::TABLE)
             ->fetchAllAssociative();
 
@@ -222,18 +223,18 @@ final class RabbitMqQueue implements Queue
     private function hydrate(array $result): Job
     {
         assert(is_int($result['id']));
-        assert(is_string($result['job_name']));
-        assert(is_string($result['job_data']));
-        assert(is_int($result['job_attempt']));
+        assert(is_string($result['name']));
+        assert(is_string($result['data']));
+        assert(is_int($result['attempt']));
 
-        $unserialized = unserialize($result['job_data']);
+        $unserialized = unserialize($result['data']);
         assert(is_array($unserialized));
 
         return new Job(
             new Identifier($result['id']),
-            new Name($result['job_name']),
+            new Name($result['name']),
             $unserialized,
-            new Unsigned($result['job_attempt']),
+            new Unsigned($result['attempt']),
         );
     }
 
