@@ -27,6 +27,11 @@ interface Queue
 
     public function stopProcessing(): void;
 
+    /**
+     * Returns amount of processors can be diverent thread/process
+     */
+    public function countProcessing(): int;
+
     public function delete(Job $job): void;
 
     public function bury(Job $job): void;
