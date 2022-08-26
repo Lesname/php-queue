@@ -128,6 +128,23 @@ final class RabbitMqQueue implements Queue
         $this->getChannel()->stopConsume();
     }
 
+    public function countProcessing(): int
+    {
+        $this->channel = $this->connection->channel();
+
+        $result = $this
+            ->channel
+            ->queue_declare(
+                self::QUEUE,
+                passive: true,
+            );
+
+        assert(is_array($result));
+        assert(is_int($result[2]));
+
+        return $result[2];
+    }
+
     public function delete(Job $job): void
     {
         $this->getChannel()->basic_ack($job->id->getValue());

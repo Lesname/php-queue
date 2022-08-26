@@ -135,6 +135,28 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
+    public function countProcessing(): int
+    {
+        $result = $this
+            ->connection
+            ->createQueryBuilder()
+            ->select('count(*)')
+            ->from('queue_job')
+            ->where('state = "reserved"')
+            ->fetchOne();
+
+        if ($result === false) {
+            throw new RuntimeException();
+        }
+
+        assert((is_string($result) && ctype_digit($result)) || is_int($result));
+
+        return (int)$result;
+    }
+
+    /**
+     * @throws Exception
+     */
     public function delete(Job $job): void
     {
         $builder = $this->connection->createQueryBuilder();
