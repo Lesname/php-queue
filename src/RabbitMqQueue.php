@@ -5,6 +5,7 @@ namespace LessQueue;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
+use ErrorException;
 use LessDatabase\Query\Builder\Applier\PaginateApplier;
 use LessDatabase\Query\Builder\Applier\Values\InsertValuesApplier;
 use LessQueue\Job\Job;
@@ -21,7 +22,6 @@ use LessValueObject\String\Exception\TooShort;
 use LessValueObject\String\Format\Exception\NotFormat;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Exchange\AMQPExchangeType;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
@@ -84,10 +84,11 @@ final class RabbitMqQueue implements Queue
         $this->getChannel()->basic_publish($message, self::EXCHANGE);
     }
 
-    public function process(callable $callback, Vo\Timeout $timeout): void
+    /**
+     * @throws ErrorException
+     */
+    public function process(callable $callback): void
     {
-        $till = time() + $timeout->getValue();
-
         $this->getChannel()->basic_consume(
             self::QUEUE,
             callback: function (AMQPMessage $message) use ($callback) {
@@ -109,15 +110,22 @@ final class RabbitMqQueue implements Queue
             },
         );
 
-        while ($till > time()) {
-            $ttl = $till - time();
+        $this->getChannel()->consume();
+    }
 
-            try {
-                $this->getChannel()->wait(timeout: $ttl);
-            } catch (AMQPTimeoutException) {
-                break;
-            }
+    public function isProcessing(): bool
+    {
+        return $this->channel instanceof AMQPChannel
+            && $this->getChannel()->is_consuming();
+    }
+
+    public function stopProcessing(): void
+    {
+        if (!$this->isProcessing()) {
+            throw new RuntimeException();
         }
+
+        $this->getChannel()->stopConsume();
     }
 
     public function delete(Job $job): void
@@ -184,12 +192,6 @@ final class RabbitMqQueue implements Queue
 
     /**
      * @throws Exception
-     * @throws MaxOutBounds
-     * @throws MinOutBounds
-     * @throws PrecisionOutBounds
-     * @throws TooLong
-     * @throws TooShort
-     * @throws NotFormat
      */
     public function getBuried(Paginate $paginate): array
     {
