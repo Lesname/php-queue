@@ -5,6 +5,7 @@ namespace LessQueue;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
+use ErrorException;
 use LessDatabase\Query\Builder\Applier\PaginateApplier;
 use LessDatabase\Query\Builder\Applier\Values\InsertValuesApplier;
 use LessQueue\Job\Job;
@@ -21,7 +22,6 @@ use LessValueObject\String\Exception\TooShort;
 use LessValueObject\String\Format\Exception\NotFormat;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Exchange\AMQPExchangeType;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
@@ -33,7 +33,8 @@ final class RabbitMqQueue implements Queue
 
     private const QUEUE = 'less.queue';
     private const EXCHANGE = 'base_exchange';
-    private const TABLE = 'buried_queue';
+
+    private const TABLE = 'buried_queue_job';
 
     public function __construct(
         private readonly AMQPStreamConnection $connection,
@@ -83,10 +84,11 @@ final class RabbitMqQueue implements Queue
         $this->getChannel()->basic_publish($message, self::EXCHANGE);
     }
 
-    public function process(callable $callback, Vo\Timeout $timeout): void
+    /**
+     * @throws ErrorException
+     */
+    public function process(callable $callback): void
     {
-        $till = time() + $timeout->getValue();
-
         $this->getChannel()->basic_consume(
             self::QUEUE,
             callback: function (AMQPMessage $message) use ($callback) {
@@ -108,15 +110,22 @@ final class RabbitMqQueue implements Queue
             },
         );
 
-        while ($till > time()) {
-            $ttl = $till - time();
+        $this->getChannel()->consume();
+    }
 
-            try {
-                $this->getChannel()->wait(timeout: $ttl);
-            } catch (AMQPTimeoutException) {
-                break;
-            }
+    public function isProcessing(): bool
+    {
+        return $this->channel instanceof AMQPChannel
+            && $this->getChannel()->is_consuming();
+    }
+
+    public function stopProcessing(): void
+    {
+        if (!$this->isProcessing()) {
+            throw new RuntimeException();
         }
+
+        $this->getChannel()->stopConsume();
     }
 
     public function delete(Job $job): void
@@ -131,9 +140,9 @@ final class RabbitMqQueue implements Queue
     {
         $applier = new InsertValuesApplier(
             [
-                'job_name' => $job->name,
-                'job_data' => serialize($job->data),
-                'job_attempt' => $job->attempt,
+                'name' => $job->name,
+                'data' => serialize($job->data),
+                'attempt' => $job->attempt,
             ],
         );
         $applier
@@ -158,9 +167,9 @@ final class RabbitMqQueue implements Queue
         $selectBuilder = $this->database->createQueryBuilder();
         $result = $selectBuilder
             ->addSelect('id')
-            ->addSelect('job_name')
-            ->addSelect('job_data')
-            ->addSelect('job_attempt')
+            ->addSelect('name')
+            ->addSelect('data')
+            ->addSelect('attempt')
             ->from(self::TABLE)
             ->andWhere('id = :id')
             ->setParameter('id', $id)
@@ -183,12 +192,6 @@ final class RabbitMqQueue implements Queue
 
     /**
      * @throws Exception
-     * @throws MaxOutBounds
-     * @throws MinOutBounds
-     * @throws PrecisionOutBounds
-     * @throws TooLong
-     * @throws TooShort
-     * @throws NotFormat
      */
     public function getBuried(Paginate $paginate): array
     {
@@ -197,9 +200,9 @@ final class RabbitMqQueue implements Queue
 
         $results = $builder
             ->addSelect('id')
-            ->addSelect('job_name')
-            ->addSelect('job_data')
-            ->addSelect('job_attempt')
+            ->addSelect('name')
+            ->addSelect('data')
+            ->addSelect('attempt')
             ->from(self::TABLE)
             ->fetchAllAssociative();
 
@@ -222,18 +225,18 @@ final class RabbitMqQueue implements Queue
     private function hydrate(array $result): Job
     {
         assert(is_int($result['id']));
-        assert(is_string($result['job_name']));
-        assert(is_string($result['job_data']));
-        assert(is_int($result['job_attempt']));
+        assert(is_string($result['name']));
+        assert(is_string($result['data']));
+        assert(is_int($result['attempt']));
 
-        $unserialized = unserialize($result['job_data']);
+        $unserialized = unserialize($result['data']);
         assert(is_array($unserialized));
 
         return new Job(
             new Identifier($result['id']),
-            new Name($result['job_name']),
+            new Name($result['name']),
             $unserialized,
-            new Unsigned($result['job_attempt']),
+            new Unsigned($result['attempt']),
         );
     }
 

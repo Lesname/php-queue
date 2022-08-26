@@ -19,10 +19,13 @@ use LessValueObject\Number\Int\Unsigned;
 use LessValueObject\String\Exception\TooLong;
 use LessValueObject\String\Exception\TooShort;
 use LessValueObject\String\Format\Exception\NotFormat;
+use RuntimeException;
 
 final class DbalQueue implements Queue
 {
     private const TABLE = 'queue_job';
+
+    private bool $processing = false;
 
     public function __construct(private readonly Connection $connection)
     {}
@@ -92,9 +95,13 @@ final class DbalQueue implements Queue
      * @throws TooLong
      * @throws TooShort
      */
-    public function process(callable $callback, Vo\Timeout $timeout): void
+    public function process(callable $callback): void
     {
-        $till = time() + $timeout->getValue();
+        if ($this->processing) {
+            throw new RuntimeException('Cannot process when already processing');
+        }
+
+        $this->processing = true;
 
         do {
             $job = $this->findProcessableJob();
@@ -103,10 +110,26 @@ final class DbalQueue implements Queue
                 $callback($job);
             }
 
-            if ($job === null && $till > time()) {
-                sleep(min(1, max(3, $till - time())));
+            if ($this->isProcessing() && $job === null) {
+                sleep(3);
             }
-        } while ($till > time());
+        } while ($job && $this->isProcessing());
+
+        $this->processing = false;
+    }
+
+    public function isProcessing(): bool
+    {
+        return $this->processing;
+    }
+
+    public function stopProcessing(): void
+    {
+        if ($this->isProcessing() === false) {
+            throw new RuntimeException();
+        }
+
+        $this->processing = false;
     }
 
     /**
