@@ -21,7 +21,11 @@ interface Queue
     /**
      * @param callable(Job $job): void $callback
      */
-    public function process(callable $callback, Vo\Timeout $timeout): void;
+    public function process(callable $callback): void;
+
+    public function isProcessing(): bool;
+
+    public function stopProcessing(): void;
 
     public function delete(Job $job): void;
 
