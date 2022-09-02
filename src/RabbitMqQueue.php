@@ -130,10 +130,8 @@ final class RabbitMqQueue implements Queue
 
     public function countProcessing(): int
     {
-        $this->channel = $this->connection->channel();
-
         $result = $this
-            ->channel
+            ->getChannel()
             ->queue_declare(
                 self::QUEUE,
                 passive: true,
@@ -143,6 +141,21 @@ final class RabbitMqQueue implements Queue
         assert(is_int($result[2]));
 
         return $result[2];
+    }
+
+    public function countProcessable(): int
+    {
+        $result = $this
+            ->getChannel()
+            ->queue_declare(
+                self::QUEUE,
+                passive: true,
+            );
+
+        assert(is_array($result));
+        assert(is_int($result[1]));
+
+        return $result[1];
     }
 
     public function delete(Job $job): void
