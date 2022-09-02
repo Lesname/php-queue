@@ -32,6 +32,11 @@ interface Queue
      */
     public function countProcessing(): int;
 
+    /**
+     * Returns amount of processable jobs
+     */
+    public function countProcessable(): int;
+
     public function delete(Job $job): void;
 
     public function bury(Job $job): void;
