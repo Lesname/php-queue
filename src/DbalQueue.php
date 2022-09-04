@@ -297,16 +297,16 @@ final class DbalQueue implements Queue
             ->fetchAssociative();
 
         if (is_array($result)) {
-            assert(is_int($result['id']), 'Expected string id');
-            assert(is_string($result['name']), 'Expected string name');
+            assert(is_string($result['id']) || is_int($result['id']));
+            assert(is_string($result['name']));
             assert(is_string($result['attempt']) || is_int($result['attempt']), 'Expected attempt');
 
-            assert(is_string($result['data']), 'Expected string data');
+            assert(is_string($result['data']));
             $data = unserialize($result['data']);
-            assert(is_array($data), 'Expected unserialized array for data');
+            assert(is_array($data));
 
             return new Job(
-                new Identifier($result['id']),
+                new Identifier((string)$result['id']),
                 new Name($result['name']),
                 $data,
                 new Unsigned((int)$result['attempt']),
