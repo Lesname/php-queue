@@ -37,7 +37,7 @@ interface Queue
      */
     public function countProcessable(): int;
 
-    public function delete(Job $job): void;
+    public function delete(Identifier | Job $item): void;
 
     public function bury(Job $job): void;
 

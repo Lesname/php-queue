@@ -161,20 +161,26 @@ final class RabbitMqQueue implements Queue
     /**
      * @throws Exception
      */
-    public function delete(Job $job): void
+    public function delete(Identifier | Job $item): void
     {
-        $type = substr($job->id->getValue(), 0, 2);
-        $id = substr($job->id->getValue(), 3);
+        $id = $item instanceof Job
+            ? $item->id
+            : $item;
 
-        if ($type === 'rm') {
-            $this->getChannel()->basic_ack((int)$id);
-        } elseif ($type === 'db') {
+        $idType = substr($id->getValue(), 0, 2);
+        $idValue = substr($id->getValue(), 3);
+
+        if ($idType === 'rm') {
+            $this->getChannel()->basic_ack((int)$idValue);
+        } elseif ($idType === 'db') {
             $builder = $this->database->createQueryBuilder();
             $builder
                 ->delete(self::TABLE)
                 ->andWhere('id = :id')
-                ->setParameter('id', $id)
+                ->setParameter('id', $idValue)
                 ->executeStatement();
+        } else {
+            throw new RuntimeException("Type '{$idType}' unknown");
         }
     }
 
