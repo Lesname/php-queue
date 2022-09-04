@@ -182,13 +182,17 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
-    public function delete(Job $job): void
+    public function delete(Identifier | Job $item): void
     {
+        $id = $item instanceof Job
+            ? $item->id
+            : $item;
+
         $builder = $this->connection->createQueryBuilder();
         $builder
             ->delete(self::TABLE)
             ->andWhere('id = :id')
-            ->setParameter('id', $job->id)
+            ->setParameter('id', $id)
             ->executeStatement();
     }
 
