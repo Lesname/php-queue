@@ -15,7 +15,7 @@ final class Identifier extends AbstractStringValueObject
      */
     public static function getMinLength(): int
     {
-        return 4;
+        return 1;
     }
 
     /**

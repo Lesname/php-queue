@@ -138,6 +138,9 @@ final class DbalQueueTest extends TestCase
 
     /**
      * @throws Exception
+     * @throws MaxOutBounds
+     * @throws MinOutBounds
+     * @throws PrecisionOutBounds
      */
     public function testDeleteViaJob(): void
     {
@@ -171,7 +174,7 @@ final class DbalQueueTest extends TestCase
             ->willReturn($builder);
 
         $job = new Job(
-            new Identifier(3),
+            new Identifier('3'),
             new Name('foo:bar'),
             [],
             new Unsigned(1),
@@ -216,7 +219,7 @@ final class DbalQueueTest extends TestCase
             ->willReturn($builder);
 
         $job = new Job(
-            new Identifier(3),
+            new Identifier('rm-3'),
             new Name('fiz:biz'),
             [],
             new Unsigned(2),

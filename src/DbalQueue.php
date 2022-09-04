@@ -262,7 +262,7 @@ final class DbalQueue implements Queue
                 assert(is_array($data), 'Expected unserialized array for data');
 
                 return new Job(
-                    new Identifier((int)$result['id']),
+                    new Identifier((string)$result['id']),
                     new Name($result['name']),
                     $data,
                     new Unsigned((int)$result['attempt']),
