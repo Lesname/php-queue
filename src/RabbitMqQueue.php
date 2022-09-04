@@ -219,7 +219,7 @@ final class RabbitMqQueue implements Queue
 
         $selectBuilder = $this->database->createQueryBuilder();
         $result = $selectBuilder
-            ->addSelect('concat("db-", id)')
+            ->addSelect('concat("db-", id) as id')
             ->addSelect('name')
             ->addSelect('data')
             ->addSelect('attempt')
@@ -246,7 +246,7 @@ final class RabbitMqQueue implements Queue
         (new PaginateApplier($paginate))->apply($builder);
 
         $results = $builder
-            ->addSelect('concat("db-", id)')
+            ->addSelect('concat("db-", id) as id')
             ->addSelect('name')
             ->addSelect('data')
             ->addSelect('attempt')
