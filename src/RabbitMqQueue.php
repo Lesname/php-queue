@@ -101,7 +101,7 @@ final class RabbitMqQueue implements Queue
 
                 $callback(
                     new Job(
-                        new Identifier($message->getDeliveryTag()),
+                        new Identifier('rm-' . $message->getDeliveryTag()),
                         $decoded['name'],
                         $decoded['data'],
                         new Unsigned($decoded['attempt']),
@@ -158,9 +158,24 @@ final class RabbitMqQueue implements Queue
         return $result[1];
     }
 
+    /**
+     * @throws Exception
+     */
     public function delete(Job $job): void
     {
-        $this->getChannel()->basic_ack($job->id->getValue());
+        $type = substr($job->id->getValue(), 0, 2);
+        $id = substr($job->id->getValue(), 3);
+
+        if ($type === 'rm') {
+            $this->getChannel()->basic_ack((int)$id);
+        } elseif ($type === 'db') {
+            $builder = $this->database->createQueryBuilder();
+            $builder
+                ->delete(self::TABLE)
+                ->andWhere('id = :id')
+                ->setParameter('id', $id)
+                ->executeStatement();
+        }
     }
 
     /**
@@ -194,15 +209,17 @@ final class RabbitMqQueue implements Queue
      */
     public function reanimate(Identifier $id, ?Timestamp $until = null): void
     {
+        $dbId = substr($id->getValue(), 3);
+
         $selectBuilder = $this->database->createQueryBuilder();
         $result = $selectBuilder
-            ->addSelect('id')
+            ->addSelect('concat("db-", id)')
             ->addSelect('name')
             ->addSelect('data')
             ->addSelect('attempt')
             ->from(self::TABLE)
             ->andWhere('id = :id')
-            ->setParameter('id', $id)
+            ->setParameter('id', $dbId)
             ->fetchAssociative();
 
         if ($result === false) {
@@ -211,13 +228,7 @@ final class RabbitMqQueue implements Queue
 
         $job = $this->hydrate($result);
         $this->republish($job, $until);
-
-        $deleteBuilder = $this->database->createQueryBuilder();
-        $deleteBuilder
-            ->delete(self::TABLE)
-            ->andWhere('id = :id')
-            ->setParameter('id', $id)
-            ->executeStatement();
+        $this->delete($job);
     }
 
     /**
@@ -229,7 +240,7 @@ final class RabbitMqQueue implements Queue
         (new PaginateApplier($paginate))->apply($builder);
 
         $results = $builder
-            ->addSelect('id')
+            ->addSelect('concat("db-", id)')
             ->addSelect('name')
             ->addSelect('data')
             ->addSelect('attempt')
@@ -254,7 +265,7 @@ final class RabbitMqQueue implements Queue
      */
     private function hydrate(array $result): Job
     {
-        assert(is_int($result['id']));
+        assert(is_string($result['id']));
         assert(is_string($result['name']));
         assert(is_string($result['data']));
         assert(is_int($result['attempt']));
