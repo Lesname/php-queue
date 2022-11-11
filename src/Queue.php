@@ -15,7 +15,7 @@ interface Queue
     /**
      * @param array<mixed> $data
      */
-    public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void;
+    public function publish(Name $name, array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void;
 
     public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void;
 

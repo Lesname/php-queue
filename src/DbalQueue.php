@@ -36,7 +36,7 @@ final class DbalQueue implements Queue
      *
      * @throws Exception
      */
-    public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void
+    public function publish(Name $name, array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $builder = $this->connection->createQueryBuilder();
         $builder

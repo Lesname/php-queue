@@ -42,7 +42,7 @@ final class RabbitMqQueue implements Queue
         private readonly Connection $database,
     ) {}
 
-    public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void
+    public function publish(Name $name, array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $this->put(
             serialize(
