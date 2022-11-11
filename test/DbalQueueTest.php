@@ -10,6 +10,7 @@ use LessQueue\DbalQueue;
 use LessQueue\Job\Job;
 use LessQueue\Job\Property\Identifier;
 use LessQueue\Job\Property\Name;
+use LessQueue\Parameter\Priority;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
 use LessValueObject\Number\Exception\PrecisionOutBounds;
@@ -33,6 +34,7 @@ final class DbalQueueTest extends TestCase
         $name = new Name('fiz:biz');
         $data = [];
         $until = new Timestamp(1);
+        $priority = new Priority(4);
 
         $builder = $this->createMock(QueryBuilder::class);
         $builder
@@ -54,6 +56,7 @@ final class DbalQueueTest extends TestCase
                     'name' => ':name',
                     'data' => ':data',
                     'until' => ':until',
+                    'priority' => ':priority',
                 ],
             )
             ->willReturn($builder);
@@ -66,6 +69,7 @@ final class DbalQueueTest extends TestCase
                     'name' => $name,
                     'data' => serialize($data),
                     'until' => $until,
+                    'priority' => $priority,
                 ]
             )
             ->willReturn($builder);
@@ -78,7 +82,7 @@ final class DbalQueueTest extends TestCase
 
         $queue = new DbalQueue($database);
 
-        $queue->publish($name, $data, $until);
+        $queue->publish($name, $data, $until, $priority);
     }
 
     /**
@@ -109,6 +113,7 @@ final class DbalQueueTest extends TestCase
                     'state' => '"ready"',
                     'data' => ':data',
                     'until' => ':until',
+                    'priority' => ':priority',
                 ],
             )
             ->willReturn($builder);
@@ -121,6 +126,7 @@ final class DbalQueueTest extends TestCase
                     'name' => $name,
                     'data' => serialize($data),
                     'until' => null,
+                    'priority' => null,
                 ],
             )
             ->willReturn($builder);
