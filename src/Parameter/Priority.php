@@ -3,9 +3,6 @@ declare(strict_types=1);
 
 namespace LessQueue\Parameter;
 
-use LessValueObject\Number\Exception\MaxOutBounds;
-use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\AbstractIntValueObject;
 
 /**
