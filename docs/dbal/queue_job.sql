@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS queue_job
     data TEXT NOT NULL,
     attempt TINYINT UNSIGNED NOT NULL DEFAULT 0,
     until INT(11) UNSIGNED,
+    priority TINYINT UNSIGNED,
 
     reserved_on INT(11) UNSIGNED DEFAULT NULL,
     reserved_release INT(11) UNSIGNED DEFAULT NULL,

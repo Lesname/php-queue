@@ -10,6 +10,7 @@ use LessDatabase\Query\Builder\Applier\PaginateApplier;
 use LessQueue\Job\Job;
 use LessQueue\Job\Property\Identifier;
 use LessQueue\Job\Property\Name;
+use LessQueue\Parameter\Priority;
 use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
@@ -35,7 +36,7 @@ final class DbalQueue implements Queue
      *
      * @throws Exception
      */
-    public function publish(Name $name, array $data, ?Timestamp $until = null): void
+    public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $builder = $this->connection->createQueryBuilder();
         $builder
@@ -46,6 +47,7 @@ final class DbalQueue implements Queue
                     'name' => ':name',
                     'data' => ':data',
                     'until' => ':until',
+                    'priority' => ':priority',
                 ],
             )
             ->setParameters(
@@ -53,6 +55,7 @@ final class DbalQueue implements Queue
                     'name' => $name,
                     'data' => serialize($data),
                     'until' => $until,
+                    'priority' => $priority,
                 ],
             )
             ->executeStatement();
@@ -61,7 +64,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
-    public function republish(Job $job, ?Timestamp $until = null): void
+    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $builder = $this->connection->createQueryBuilder();
         $builder
@@ -73,6 +76,7 @@ final class DbalQueue implements Queue
                     'data' => ':data',
                     'until' => ':until',
                     'attempt' => ':attempt',
+                    'priority' => ':priority',
                 ],
             )
             ->setParameters(
@@ -81,6 +85,7 @@ final class DbalQueue implements Queue
                     'data' => serialize($job->data),
                     'until' => $until,
                     'attempt' => $job->attempt,
+                    'priority' => $priority,
                 ],
             )
             ->executeStatement();
@@ -295,6 +300,7 @@ final class DbalQueue implements Queue
             ->addSelect('data as data')
             ->addSelect('attempt as attempt')
             ->from(self::TABLE)
+            ->addOrderBy('priority', 'DESC')
             ->addOrderBy('until', 'ASC')
             ->addOrderBy('id', 'ASC')
             ->setMaxResults(1)

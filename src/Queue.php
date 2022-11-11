@@ -6,6 +6,7 @@ namespace LessQueue;
 use LessQueue\Job\Job;
 use LessQueue\Job\Property\Identifier;
 use LessQueue\Job\Property\Name;
+use LessQueue\Parameter\Priority;
 use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Int\Date\Timestamp;
 
@@ -14,9 +15,9 @@ interface Queue
     /**
      * @param array<mixed> $data
      */
-    public function publish(Name $name, array $data, ?Timestamp $until = null): void;
+    public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void;
 
-    public function republish(Job $job, ?Timestamp $until = null): void;
+    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void;
 
     /**
      * @param callable(Job $job): void $callback

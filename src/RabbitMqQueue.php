@@ -11,6 +11,7 @@ use LessDatabase\Query\Builder\Applier\Values\InsertValuesApplier;
 use LessQueue\Job\Job;
 use LessQueue\Job\Property\Identifier;
 use LessQueue\Job\Property\Name;
+use LessQueue\Parameter\Priority;
 use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
@@ -41,7 +42,7 @@ final class RabbitMqQueue implements Queue
         private readonly Connection $database,
     ) {}
 
-    public function publish(Name $name, array $data, ?Timestamp $until = null): void
+    public function publish(Name $name, array $data, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $this->put(
             serialize(
@@ -55,7 +56,7 @@ final class RabbitMqQueue implements Queue
         );
     }
 
-    public function republish(Job $job, ?Timestamp $until = null): void
+    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $this->put(
             serialize(
@@ -310,7 +311,10 @@ final class RabbitMqQueue implements Queue
                     self::QUEUE,
                     auto_delete: false,
                     arguments: new AMQPTable(
-                        ['x-dead-letter-exchange' => 'delayed'],
+                        [
+                            'x-dead-letter-exchange' => 'delayed',
+                            'x-max-priority' => 5,
+                        ],
                     ),
                 );
 
