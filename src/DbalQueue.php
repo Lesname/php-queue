@@ -55,7 +55,7 @@ final class DbalQueue implements Queue
                     'name' => $name,
                     'data' => serialize($data),
                     'until' => $until,
-                    'priority' => $priority,
+                    'priority' => $priority ?? Priority::normal(),
                 ],
             )
             ->executeStatement();
