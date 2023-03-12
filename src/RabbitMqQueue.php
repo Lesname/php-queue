@@ -53,6 +53,7 @@ final class RabbitMqQueue implements Queue
                 ],
             ),
             $until,
+            $priority,
         );
     }
 
@@ -67,14 +68,18 @@ final class RabbitMqQueue implements Queue
                 ],
             ),
             $until,
+            $priority,
         );
     }
 
-    private function put(string $body, ?Timestamp $until = null): void
+    private function put(string $body, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $message = new AMQPMessage(
             $body,
-            ['delivery_mode' => 2],
+            [
+                'priority' => ($priority ?? Priority::normal())->getValue(),
+                'delivery_mode' => 2,
+            ],
         );
 
         if ($until && $until->getValue() >= time()) {
