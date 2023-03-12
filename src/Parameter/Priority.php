@@ -10,12 +10,12 @@ use LessValueObject\Number\Int\AbstractIntValueObject;
  */
 final class Priority extends AbstractIntValueObject
 {
-    public static function normal(): self
+    public static function low(): self
     {
-        return new self(0);
+        return new self(1);
     }
 
-    public static function low(): self
+    public static function normal(): self
     {
         return new self(2);
     }
