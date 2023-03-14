@@ -84,7 +84,7 @@ final class DbalQueue implements Queue
                     'name' => $job->name,
                     'data' => serialize($job->data),
                     'until' => $until,
-                    'attempt' => $job->attempt,
+                    'attempt' => $job->attempt->getValue() + 1,
                     'priority' => $priority,
                 ],
             )
