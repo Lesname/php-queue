@@ -49,7 +49,7 @@ final class RabbitMqQueue implements Queue
                 [
                     'name' => $name,
                     'data' => $data,
-                    'attempt' => 1,
+                    'attempt' => 0,
                 ],
             ),
             $until,
