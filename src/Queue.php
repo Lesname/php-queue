@@ -29,7 +29,7 @@ interface Queue
     public function stopProcessing(): void;
 
     /**
-     * Returns amount of processors can be diverent thread/process
+     * Returns amount of processors can be different thread/process
      */
     public function countProcessing(): int;
 

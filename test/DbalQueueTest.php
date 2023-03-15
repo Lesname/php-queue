@@ -126,7 +126,7 @@ final class DbalQueueTest extends TestCase
                     'name' => $name,
                     'data' => serialize($data),
                     'until' => null,
-                    'priority' => null,
+                    'priority' => Priority::normal(),
                 ],
             )
             ->willReturn($builder);
