@@ -13,6 +13,10 @@
   image: php:8.1
   extends: .base
 
+.php82:
+  image: php:8.2
+  extends: .base
+
 stages:
   - quality
   - deploy
@@ -21,6 +25,15 @@ stages:
 
 phpstan81:
   extends: .php81
+  stage: quality
+  except:
+    - main
+    - tags
+  script:
+    - ./vendor/bin/phpstan analyse -c phpstan.neon
+
+phpstan82:
+  extends: .php82
   stage: quality
   except:
     - main
@@ -39,21 +52,28 @@ phpcs81:
   script:
     - ./vendor/bin/phpcs --standard=./phpcs.xml
 
-# PHPUnit
+phpcs82:
+  extends: .php82
+  stage: quality
+  except:
+    - main
+    - tags
+  script:
+    - ./vendor/bin/phpcs --standard=./phpcs.xml
 
-phpunit81:
+# Psalm
+
+psalm81:
   extends: .php81
   stage: quality
   except:
     - main
     - tags
   script:
-    - ./vendor/bin/phpunit -c phpunit.xml --do-not-cache-result
+    - ./vendor/bin/psalm
 
-# Psalm
-
-psalm81:
-  extends: .php81
+psalm82:
+  extends: .php82
   stage: quality
   except:
     - main
