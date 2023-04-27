@@ -64,7 +64,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
-    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void
+    public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void
     {
         $builder = $this->connection->createQueryBuilder();
         $builder

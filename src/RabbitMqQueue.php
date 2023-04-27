@@ -57,7 +57,7 @@ final class RabbitMqQueue implements Queue
         );
     }
 
-    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void
+    public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void
     {
         $this->put(
             serialize(
@@ -239,7 +239,7 @@ final class RabbitMqQueue implements Queue
         }
 
         $job = $this->hydrate($result);
-        $this->republish($job, $until);
+        $this->republish($job, $until ?? Timestamp::now());
         $this->delete($job);
     }
 
