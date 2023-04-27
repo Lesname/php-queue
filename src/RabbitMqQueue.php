@@ -239,7 +239,7 @@ final class RabbitMqQueue implements Queue
         }
 
         $job = $this->hydrate($result);
-        $this->republish($job, $until);
+        $this->republish($job, $until ?? Timestamp::now());
         $this->delete($job);
     }
 
