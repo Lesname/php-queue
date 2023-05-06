@@ -187,6 +187,28 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
+    public function countBuried(): int
+    {
+        $result = $this
+            ->connection
+            ->createQueryBuilder()
+            ->select('count(*)')
+            ->from('queue_job')
+            ->andWhere('state = "buried"')
+            ->fetchOne();
+
+        if ($result === false) {
+            throw new RuntimeException();
+        }
+
+        assert((is_string($result) && ctype_digit($result)) || is_int($result));
+
+        return (int)$result;
+    }
+
+    /**
+     * @throws Exception
+     */
     public function delete(Identifier | Job $item): void
     {
         $id = $item instanceof Job
