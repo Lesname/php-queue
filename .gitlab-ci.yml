@@ -9,28 +9,15 @@
     - docker-php-ext-install sockets
     - composer update --no-progress --prefer-dist
 
-.php81:
-  image: php:8.1
-  extends: .base
-
-.php82:
-  image: php:8.2
-  extends: .base
-
 stages:
   - quality
   - deploy
 
-# PHPStan
+# PHP 8.2
 
-phpstan81:
-  extends: .php81
-  stage: quality
-  except:
-    - main
-    - tags
-  script:
-    - ./vendor/bin/phpstan analyse -c phpstan.neon
+.php82:
+  image: php:8.2
+  extends: .base
 
 phpstan82:
   extends: .php82
@@ -41,17 +28,6 @@ phpstan82:
   script:
     - ./vendor/bin/phpstan analyse -c phpstan.neon
 
-# PHP code sniffer
-
-phpcs81:
-  extends: .php81
-  stage: quality
-  except:
-    - main
-    - tags
-  script:
-    - ./vendor/bin/phpcs --standard=./phpcs.xml
-
 phpcs82:
   extends: .php82
   stage: quality
@@ -61,10 +37,8 @@ phpcs82:
   script:
     - ./vendor/bin/phpcs --standard=./phpcs.xml
 
-# Psalm
-
-psalm81:
-  extends: .php81
+psalm82:
+  extends: .php82
   stage: quality
   except:
     - main
@@ -72,8 +46,32 @@ psalm81:
   script:
     - ./vendor/bin/psalm
 
-psalm82:
-  extends: .php82
+# PHP 8.3
+
+.php83:
+  image: php:8.3
+  extends: .base
+
+phpstan83:
+  extends: .php83
+  stage: quality
+  except:
+    - main
+    - tags
+  script:
+    - ./vendor/bin/phpstan analyse -c phpstan.neon
+
+phpcs83:
+  extends: .php83
+  stage: quality
+  except:
+    - main
+    - tags
+  script:
+    - ./vendor/bin/phpcs --standard=./phpcs.xml
+
+psalm83:
+  extends: .php83
   stage: quality
   except:
     - main

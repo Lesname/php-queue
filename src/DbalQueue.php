@@ -6,6 +6,7 @@ namespace LessQueue;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Query\QueryBuilder;
+use LessValueObject\Number\Exception\NotMultipleOf;
 use LessDatabase\Query\Builder\Applier\PaginateApplier;
 use LessQueue\Job\Job;
 use LessQueue\Job\Property\Identifier;
@@ -14,7 +15,6 @@ use LessQueue\Parameter\Priority;
 use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\Date\Timestamp;
 use LessValueObject\Number\Int\Unsigned;
 use LessValueObject\String\Exception\TooLong;
@@ -96,9 +96,9 @@ final class DbalQueue implements Queue
      * @throws MaxOutBounds
      * @throws MinOutBounds
      * @throws NotFormat
-     * @throws PrecisionOutBounds
      * @throws TooLong
      * @throws TooShort
+     * @throws NotMultipleOf
      */
     public function process(callable $callback): void
     {
@@ -260,11 +260,11 @@ final class DbalQueue implements Queue
     /**
      * @return array<Job>
      *
+     * @throws NotMultipleOf
      * @throws Exception
      * @throws MaxOutBounds
      * @throws MinOutBounds
      * @throws NotFormat
-     * @throws PrecisionOutBounds
      * @throws TooLong
      * @throws TooShort
      */
@@ -307,10 +307,10 @@ final class DbalQueue implements Queue
      * @throws Exception
      * @throws MaxOutBounds
      * @throws MinOutBounds
-     * @throws PrecisionOutBounds
+     * @throws NotFormat
      * @throws TooLong
      * @throws TooShort
-     * @throws NotFormat
+     * @throws NotMultipleOf
      */
     private function findProcessableJob(): ?Job
     {

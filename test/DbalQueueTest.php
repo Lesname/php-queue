@@ -13,10 +13,10 @@ use LessQueue\Job\Property\Name;
 use LessQueue\Parameter\Priority;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\Date\Timestamp;
 use LessValueObject\Number\Int\Unsigned;
 use PHPUnit\Framework\TestCase;
+use LessValueObject\Number\Exception\NotMultipleOf;
 
 /**
  * @covers \LessQueue\DbalQueue
@@ -27,7 +27,8 @@ final class DbalQueueTest extends TestCase
      * @throws Exception
      * @throws MaxOutBounds
      * @throws MinOutBounds
-     * @throws PrecisionOutBounds
+     * @throws NotMultipleOf
+     * @throws \PHPUnit\Framework\MockObject\Exception
      */
     public function testPut(): void
     {
@@ -146,7 +147,8 @@ final class DbalQueueTest extends TestCase
      * @throws Exception
      * @throws MaxOutBounds
      * @throws MinOutBounds
-     * @throws PrecisionOutBounds
+     * @throws NotMultipleOf
+     * @throws \PHPUnit\Framework\MockObject\Exception
      */
     public function testDeleteViaJob(): void
     {
@@ -192,6 +194,10 @@ final class DbalQueueTest extends TestCase
 
     /**
      * @throws Exception
+     * @throws MaxOutBounds
+     * @throws MinOutBounds
+     * @throws NotMultipleOf
+     * @throws \PHPUnit\Framework\MockObject\Exception
      */
     public function testBury(): void
     {

@@ -6,6 +6,7 @@ namespace LessQueue;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use ErrorException;
+use LessValueObject\Number\Exception\NotMultipleOf;
 use LessDatabase\Query\Builder\Applier\PaginateApplier;
 use LessDatabase\Query\Builder\Applier\Values\InsertValuesApplier;
 use LessQueue\Job\Job;
@@ -235,9 +236,9 @@ final class RabbitMqQueue implements Queue
      * @throws MaxOutBounds
      * @throws MinOutBounds
      * @throws NotFormat
-     * @throws PrecisionOutBounds
      * @throws TooLong
      * @throws TooShort
+     * @throws NotMultipleOf
      */
     public function reanimate(Identifier $id, ?Timestamp $until = null): void
     {
@@ -288,10 +289,10 @@ final class RabbitMqQueue implements Queue
     /**
      * @param array<mixed> $result
      *
+     * @throws NotMultipleOf
      * @throws MaxOutBounds
      * @throws MinOutBounds
      * @throws NotFormat
-     * @throws PrecisionOutBounds
      * @throws TooLong
      * @throws TooShort
      */
