@@ -8,6 +8,7 @@ use Doctrine\DBAL\Exception;
 use ErrorException;
 use LessValueObject\Number\Exception\NotMultipleOf;
 use LessDatabase\Query\Builder\Applier\PaginateApplier;
+use LessValueObject\Composite\DynamicCompositeValueObject;
 use LessDatabase\Query\Builder\Applier\Values\InsertValuesApplier;
 use LessQueue\Job\Job;
 use LessQueue\Job\Property\Identifier;
@@ -43,8 +44,15 @@ final class RabbitMqQueue implements Queue
         private readonly Connection $database,
     ) {}
 
-    public function publish(Name $name, array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
+    /**
+     * @param array<string, mixed>|DynamicCompositeValueObject $data
+     */
+    public function publish(Name $name, DynamicCompositeValueObject | array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
     {
+        if (is_array($data)) {
+            trigger_error('Data array is deprecated', E_USER_DEPRECATED);
+        }
+
         $this->put(
             serialize(
                 [
@@ -103,14 +111,21 @@ final class RabbitMqQueue implements Queue
                 assert(is_array($decoded));
 
                 assert($decoded['name'] instanceof Name);
-                assert(is_array($decoded['data']));
                 assert(is_int($decoded['attempt']));
+
+                $data = $decoded['data'];
+
+                if (is_array($data)) {
+                    $data = new DynamicCompositeValueObject($data);
+                } elseif (!$data instanceof DynamicCompositeValueObject) {
+                    throw new RuntimeException();
+                }
 
                 $callback(
                     new Job(
                         new Identifier('rm-' . $message->getDeliveryTag()),
                         $decoded['name'],
-                        $decoded['data'],
+                        $data,
                         new Unsigned($decoded['attempt']),
                     ),
                 );
@@ -303,13 +318,18 @@ final class RabbitMqQueue implements Queue
         assert(is_string($result['data']));
         assert(is_int($result['attempt']));
 
-        $unserialized = unserialize($result['data']);
-        assert(is_array($unserialized));
+        $data = unserialize($result['data']);
+
+        if (is_array($data)) {
+            $data = new DynamicCompositeValueObject($data);
+        } elseif (!$data instanceof DynamicCompositeValueObject) {
+            throw new RuntimeException();
+        }
 
         return new Job(
             new Identifier($result['id']),
             new Name($result['name']),
-            $unserialized,
+            $data,
             new Unsigned($result['attempt']),
         );
     }
