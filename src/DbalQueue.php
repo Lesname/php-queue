@@ -21,6 +21,7 @@ use LessValueObject\String\Exception\TooLong;
 use LessValueObject\String\Exception\TooShort;
 use LessValueObject\String\Format\Exception\NotFormat;
 use RuntimeException;
+use LessValueObject\Composite\DynamicCompositeValueObject;
 
 final class DbalQueue implements Queue
 {
@@ -32,12 +33,16 @@ final class DbalQueue implements Queue
     {}
 
     /**
-     * @param array<mixed> $data
+     * @param array<string, mixed>|DynamicCompositeValueObject $data
      *
      * @throws Exception
      */
-    public function publish(Name $name, array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
+    public function publish(Name $name, DynamicCompositeValueObject | array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
     {
+        if (is_array($data)) {
+            trigger_error('Data array is deprecated', E_USER_DEPRECATED);
+        }
+
         $builder = $this->connection->createQueryBuilder();
         $builder
             ->insert(self::TABLE)
@@ -290,7 +295,12 @@ final class DbalQueue implements Queue
 
                 assert(is_string($result['data']), 'Expected string data');
                 $data = unserialize($result['data']);
-                assert(is_array($data), 'Expected unserialized array for data');
+
+                if (is_array($data)) {
+                    $data = new DynamicCompositeValueObject($data);
+                } elseif (!$data instanceof DynamicCompositeValueObject) {
+                    throw new RuntimeException();
+                }
 
                 return new Job(
                     new Identifier((string)$result['id']),
@@ -335,7 +345,12 @@ final class DbalQueue implements Queue
 
             assert(is_string($result['data']));
             $data = unserialize($result['data']);
-            assert(is_array($data));
+
+            if (is_array($data)) {
+                $data = new DynamicCompositeValueObject($data);
+            } elseif (!$data instanceof DynamicCompositeValueObject) {
+                throw new RuntimeException();
+            }
 
             return new Job(
                 new Identifier((string)$result['id']),

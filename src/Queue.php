@@ -9,13 +9,14 @@ use LessQueue\Job\Property\Name;
 use LessQueue\Parameter\Priority;
 use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Int\Date\Timestamp;
+use LessValueObject\Composite\DynamicCompositeValueObject;
 
 interface Queue
 {
     /**
-     * @param array<mixed> $data
+     * @param array<string, mixed>|DynamicCompositeValueObject $data
      */
-    public function publish(Name $name, array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void;
+    public function publish(Name $name, DynamicCompositeValueObject | array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void;
 
     public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void;
 
