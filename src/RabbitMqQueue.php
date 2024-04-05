@@ -44,15 +44,8 @@ final class RabbitMqQueue implements Queue
         private readonly Connection $database,
     ) {}
 
-    /**
-     * @param array<string, mixed>|DynamicCompositeValueObject $data
-     */
-    public function publish(Name $name, DynamicCompositeValueObject | array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
+    public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void
     {
-        if (is_array($data)) {
-            trigger_error('Data array is deprecated', E_USER_DEPRECATED);
-        }
-
         $this->put(
             serialize(
                 [
@@ -115,6 +108,7 @@ final class RabbitMqQueue implements Queue
 
                 $data = $decoded['data'];
 
+                // @todo drop array support in next release
                 if (is_array($data)) {
                     $data = new DynamicCompositeValueObject($data);
                 } elseif (!$data instanceof DynamicCompositeValueObject) {
@@ -320,6 +314,7 @@ final class RabbitMqQueue implements Queue
 
         $data = unserialize($result['data']);
 
+        // @todo drop array support in next release
         if (is_array($data)) {
             $data = new DynamicCompositeValueObject($data);
         } elseif (!$data instanceof DynamicCompositeValueObject) {
