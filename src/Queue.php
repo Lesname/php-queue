@@ -13,10 +13,7 @@ use LessValueObject\Composite\DynamicCompositeValueObject;
 
 interface Queue
 {
-    /**
-     * @param array<string, mixed>|DynamicCompositeValueObject $data
-     */
-    public function publish(Name $name, DynamicCompositeValueObject | array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void;
+    public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void;
 
     public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void;
 

@@ -33,16 +33,10 @@ final class DbalQueue implements Queue
     {}
 
     /**
-     * @param array<string, mixed>|DynamicCompositeValueObject $data
-     *
      * @throws Exception
      */
-    public function publish(Name $name, DynamicCompositeValueObject | array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
+    public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void
     {
-        if (is_array($data)) {
-            trigger_error('Data array is deprecated', E_USER_DEPRECATED);
-        }
-
         $builder = $this->connection->createQueryBuilder();
         $builder
             ->insert(self::TABLE)
@@ -296,6 +290,7 @@ final class DbalQueue implements Queue
                 assert(is_string($result['data']), 'Expected string data');
                 $data = unserialize($result['data']);
 
+                // @todo drop array support in next release
                 if (is_array($data)) {
                     $data = new DynamicCompositeValueObject($data);
                 } elseif (!$data instanceof DynamicCompositeValueObject) {
@@ -346,6 +341,7 @@ final class DbalQueue implements Queue
             assert(is_string($result['data']));
             $data = unserialize($result['data']);
 
+            // @todo drop array support in next release
             if (is_array($data)) {
                 $data = new DynamicCompositeValueObject($data);
             } elseif (!$data instanceof DynamicCompositeValueObject) {
