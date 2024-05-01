@@ -6,13 +6,14 @@ namespace LessQueue\Response;
 use Countable;
 use Traversable;
 use ArrayIterator;
+use JsonSerializable;
 use IteratorAggregate;
 use LessQueue\Job\Job;
 
 /**
  * @implements IteratorAggregate<Job>
  */
-final class Jobs implements IteratorAggregate, Countable
+final class Jobs implements IteratorAggregate, Countable, JsonSerializable
 {
     /**
      * @param array<Job> $jobs
@@ -28,6 +29,11 @@ final class Jobs implements IteratorAggregate, Countable
     public function getIterator(): Traversable
     {
         return new ArrayIterator($this->jobs);
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return $this->jobs;
     }
 
     public function count(): int
