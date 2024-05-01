@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace LessQueue;
 
 use LessQueue\Job\Job;
+use LessQueue\Response\Jobs;
 use LessQueue\Job\Property\Identifier;
 use LessQueue\Job\Property\Name;
 use LessQueue\Parameter\Priority;
@@ -38,6 +39,8 @@ interface Queue
 
     /**
      * Returns count of buried jobs
+     *
+     * @deprecated
      */
     public function countBuried(): int;
 
@@ -47,8 +50,5 @@ interface Queue
 
     public function reanimate(Identifier $id, ?Timestamp $until = null): void;
 
-    /**
-     * @return array<Job>
-     */
-    public function getBuried(Paginate $paginate): array;
+    public function getBuried(Paginate $paginate): Jobs;
 }

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace LessQueue;
 
+use LessQueue\Response\Jobs;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -257,8 +258,6 @@ final class DbalQueue implements Queue
     }
 
     /**
-     * @return array<Job>
-     *
      * @throws NotMultipleOf
      * @throws Exception
      * @throws MaxOutBounds
@@ -267,7 +266,7 @@ final class DbalQueue implements Queue
      * @throws TooLong
      * @throws TooShort
      */
-    public function getBuried(Paginate $paginate): array
+    public function getBuried(Paginate $paginate): Jobs
     {
         $builder = $this->connection->createQueryBuilder();
         (new PaginateApplier($paginate))->apply($builder);
@@ -281,30 +280,33 @@ final class DbalQueue implements Queue
             ->addOrderBy('id', 'ASC')
             ->fetchAllAssociative();
 
-        return array_map(
-            function (array $result): Job {
-                assert(is_string($result['id']) || is_int($result['id']), 'Expected string id');
-                assert(is_string($result['name']), 'Expected string name');
-                assert(is_string($result['attempt']) || is_int($result['attempt']), 'Expected attempt');
+        return new Jobs(
+            array_map(
+                function (array $result): Job {
+                    assert(is_string($result['id']) || is_int($result['id']), 'Expected string id');
+                    assert(is_string($result['name']), 'Expected string name');
+                    assert(is_string($result['attempt']) || is_int($result['attempt']), 'Expected attempt');
 
-                assert(is_string($result['data']), 'Expected string data');
-                $data = unserialize($result['data']);
+                    assert(is_string($result['data']), 'Expected string data');
+                    $data = unserialize($result['data']);
 
-                // @todo drop array support in next release
-                if (is_array($data)) {
-                    $data = new DynamicCompositeValueObject($data);
-                } elseif (!$data instanceof DynamicCompositeValueObject) {
-                    throw new RuntimeException();
-                }
+                    // @todo drop array support in next release
+                    if (is_array($data)) {
+                        $data = new DynamicCompositeValueObject($data);
+                    } elseif (!$data instanceof DynamicCompositeValueObject) {
+                        throw new RuntimeException();
+                    }
 
-                return new Job(
-                    new Identifier((string)$result['id']),
-                    new Name($result['name']),
-                    $data,
-                    new Unsigned((int)$result['attempt']),
-                );
-            },
-            $results,
+                    return new Job(
+                        new Identifier((string)$result['id']),
+                        new Name($result['name']),
+                        $data,
+                        new Unsigned((int)$result['attempt']),
+                    );
+                },
+                $results,
+            ),
+            $this->countBuried(),
         );
     }
 

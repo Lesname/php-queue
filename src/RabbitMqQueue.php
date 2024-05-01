@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace LessQueue;
 
+use LessQueue\Response\Jobs;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use ErrorException;
@@ -17,7 +18,6 @@ use LessQueue\Parameter\Priority;
 use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\Date\Timestamp;
 use LessValueObject\Number\Int\Unsigned;
 use LessValueObject\String\Exception\TooLong;
@@ -276,7 +276,7 @@ final class RabbitMqQueue implements Queue
     /**
      * @throws Exception
      */
-    public function getBuried(Paginate $paginate): array
+    public function getBuried(Paginate $paginate): Jobs
     {
         $builder = $this->database->createQueryBuilder();
         (new PaginateApplier($paginate))->apply($builder);
@@ -289,9 +289,12 @@ final class RabbitMqQueue implements Queue
             ->from(self::TABLE)
             ->fetchAllAssociative();
 
-        return array_map(
-            $this->hydrate(...),
-            $results,
+        return new Jobs(
+            array_map(
+                $this->hydrate(...),
+                $results,
+            ),
+            $this->countBuried(),
         );
     }
 
