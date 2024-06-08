@@ -37,13 +37,6 @@ interface Queue
      */
     public function countProcessable(): int;
 
-    /**
-     * Returns count of buried jobs
-     *
-     * @deprecated
-     */
-    public function countBuried(): int;
-
     public function delete(Identifier | Job $item): void;
 
     public function bury(Job $job): void;
