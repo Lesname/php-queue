@@ -13,39 +13,6 @@ stages:
   - quality
   - deploy
 
-# PHP 8.2
-
-.php82:
-  image: php:8.2
-  extends: .base
-
-phpstan82:
-  extends: .php82
-  stage: quality
-  except:
-    - main
-    - tags
-  script:
-    - ./vendor/bin/phpstan analyse -c phpstan.neon
-
-phpcs82:
-  extends: .php82
-  stage: quality
-  except:
-    - main
-    - tags
-  script:
-    - ./vendor/bin/phpcs --standard=./phpcs.xml
-
-psalm82:
-  extends: .php82
-  stage: quality
-  except:
-    - main
-    - tags
-  script:
-    - ./vendor/bin/psalm
-
 # PHP 8.3
 
 .php83:

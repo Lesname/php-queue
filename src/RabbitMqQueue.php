@@ -34,10 +34,10 @@ final class RabbitMqQueue implements Queue
 {
     private ?AMQPChannel $channel = null;
 
-    private const QUEUE = 'less.queue';
-    private const EXCHANGE = 'base_exchange';
+    private const string QUEUE = 'less.queue';
+    private const string EXCHANGE = 'base_exchange';
 
-    private const TABLE = 'queue_job_buried';
+    private const string TABLE = 'queue_job_buried';
 
     public function __construct(
         private readonly AMQPStreamConnection $connection,
@@ -172,6 +172,27 @@ final class RabbitMqQueue implements Queue
         assert(is_int($result[1]));
 
         return $result[1];
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function countBuried(): int
+    {
+        $result = $this
+            ->database
+            ->createQueryBuilder()
+            ->select('count(*)')
+            ->from(self::TABLE)
+            ->fetchOne();
+
+        if ($result === false) {
+            throw new RuntimeException();
+        }
+
+        assert((is_string($result) && ctype_digit($result)) || is_int($result));
+
+        return (int)$result;
     }
 
     /**

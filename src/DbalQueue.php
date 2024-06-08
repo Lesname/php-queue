@@ -26,7 +26,7 @@ use LessValueObject\Composite\DynamicCompositeValueObject;
 
 final class DbalQueue implements Queue
 {
-    private const TABLE = 'queue_job';
+    private const string TABLE = 'queue_job';
 
     private bool $processing = false;
 
@@ -233,6 +233,28 @@ final class DbalQueue implements Queue
             ->set('reserved_on', 'null')
             ->set('reserved_release', 'null')
             ->executeStatement();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function countBuried(): int
+    {
+        $result = $this
+            ->connection
+            ->createQueryBuilder()
+            ->select('count(*)')
+            ->from('queue_job')
+            ->andWhere('state = "buried"')
+            ->fetchOne();
+
+        if ($result === false) {
+            throw new RuntimeException();
+        }
+
+        assert((is_string($result) && ctype_digit($result)) || is_int($result));
+
+        return (int)$result;
     }
 
     /**
