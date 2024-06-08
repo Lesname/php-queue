@@ -34,10 +34,10 @@ final class RabbitMqQueue implements Queue
 {
     private ?AMQPChannel $channel = null;
 
-    private const QUEUE = 'less.queue';
-    private const EXCHANGE = 'base_exchange';
+    private const string QUEUE = 'less.queue';
+    private const string EXCHANGE = 'base_exchange';
 
-    private const TABLE = 'queue_job_buried';
+    private const string TABLE = 'queue_job_buried';
 
     public function __construct(
         private readonly AMQPStreamConnection $connection,
@@ -194,6 +194,7 @@ final class RabbitMqQueue implements Queue
 
         return (int)$result;
     }
+
     /**
      * @throws Exception
      */

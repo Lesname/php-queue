@@ -9,7 +9,7 @@
     }
   ],
   "require": {
-    "php": "^8.2.0",
+    "php": "^8.3.0",
 
     "lessname/value-object": "^0.3.0"
   },
