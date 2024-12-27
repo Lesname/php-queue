@@ -17,6 +17,7 @@ final class Jobs implements IteratorAggregate, Countable, JsonSerializable
 {
     /**
      * @param array<Job> $jobs
+     * @param int<0, max> $count
      */
     public function __construct(
         private readonly array $jobs,
