@@ -100,7 +100,7 @@ final class RabbitMqQueue implements Queue
         $this->getChannel()->basic_consume(
             self::QUEUE,
             callback: function (AMQPMessage $message) use ($callback) {
-                $decoded = unserialize($message->body);
+                $decoded = unserialize($message->getBody());
                 assert(is_array($decoded));
 
                 assert($decoded['name'] instanceof Name);
@@ -108,10 +108,7 @@ final class RabbitMqQueue implements Queue
 
                 $data = $decoded['data'];
 
-                // @todo drop array support in next release
-                if (is_array($data)) {
-                    $data = new DynamicCompositeValueObject($data);
-                } elseif (!$data instanceof DynamicCompositeValueObject) {
+                if (!$data instanceof DynamicCompositeValueObject) {
                     throw new RuntimeException();
                 }
 
@@ -175,6 +172,8 @@ final class RabbitMqQueue implements Queue
     }
 
     /**
+     * @return int<0, max>
+     *
      * @throws Exception
      */
     public function countBuried(): int
@@ -190,9 +189,19 @@ final class RabbitMqQueue implements Queue
             throw new RuntimeException();
         }
 
-        assert((is_string($result) && ctype_digit($result)) || is_int($result));
+        if (is_string($result) && ctype_digit($result)) {
+            $result = (int) $result;
+        }
 
-        return (int)$result;
+        if (!is_int($result)) {
+            throw new RuntimeException();
+        }
+
+        if ($result < 0) {
+            throw new RuntimeException();
+        }
+
+        return $result;
     }
 
     /**
@@ -318,10 +327,7 @@ final class RabbitMqQueue implements Queue
 
         $data = unserialize($result['data']);
 
-        // @todo drop array support in next release
-        if (is_array($data)) {
-            $data = new DynamicCompositeValueObject($data);
-        } elseif (!$data instanceof DynamicCompositeValueObject) {
+        if (!$data instanceof DynamicCompositeValueObject) {
             throw new RuntimeException();
         }
 

@@ -236,6 +236,8 @@ final class DbalQueue implements Queue
     }
 
     /**
+     * @return int<0, max>
+     *
      * @throws Exception
      */
     public function countBuried(): int
@@ -252,9 +254,19 @@ final class DbalQueue implements Queue
             throw new RuntimeException();
         }
 
-        assert((is_string($result) && ctype_digit($result)) || is_int($result));
+        if (is_string($result) && ctype_digit($result)) {
+            $result = (int)$result;
+        }
 
-        return (int)$result;
+        if (!is_int($result)) {
+            throw new RuntimeException();
+        }
+
+        if ($result < 0) {
+            throw new RuntimeException();
+        }
+
+        return $result;
     }
 
     /**
@@ -290,10 +302,7 @@ final class DbalQueue implements Queue
                     assert(is_string($result['data']), 'Expected string data');
                     $data = unserialize($result['data']);
 
-                    // @todo drop array support in next release
-                    if (is_array($data)) {
-                        $data = new DynamicCompositeValueObject($data);
-                    } elseif (!$data instanceof DynamicCompositeValueObject) {
+                    if (!$data instanceof DynamicCompositeValueObject) {
                         throw new RuntimeException();
                     }
 
@@ -343,10 +352,7 @@ final class DbalQueue implements Queue
             assert(is_string($result['data']));
             $data = unserialize($result['data']);
 
-            // @todo drop array support in next release
-            if (is_array($data)) {
-                $data = new DynamicCompositeValueObject($data);
-            } elseif (!$data instanceof DynamicCompositeValueObject) {
+            if (!$data instanceof DynamicCompositeValueObject) {
                 throw new RuntimeException();
             }
 

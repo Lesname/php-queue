@@ -17,6 +17,7 @@ use LessValueObject\Number\Int\Date\Timestamp;
 use LessValueObject\Number\Int\Unsigned;
 use PHPUnit\Framework\TestCase;
 use LessValueObject\Number\Exception\NotMultipleOf;
+use LessValueObject\Composite\DynamicCompositeValueObject;
 
 /**
  * @covers \LessQueue\DbalQueue
@@ -33,7 +34,7 @@ final class DbalQueueTest extends TestCase
     public function testPut(): void
     {
         $name = new Name('fiz:biz');
-        $data = [];
+        $data = new DynamicCompositeValueObject([]);
         $until = new Timestamp(1);
         $priority = new Priority(4);
 
@@ -92,7 +93,7 @@ final class DbalQueueTest extends TestCase
     public function testPutDefault(): void
     {
         $name = new Name('fiz:bar');
-        $data = [];
+        $data = new DynamicCompositeValueObject([]);
 
         $builder = $this->createMock(QueryBuilder::class);
         $builder
@@ -184,7 +185,7 @@ final class DbalQueueTest extends TestCase
         $job = new Job(
             new Identifier('3'),
             new Name('foo:bar'),
-            [],
+            new DynamicCompositeValueObject([]),
             new Unsigned(1),
         );
 
@@ -233,7 +234,7 @@ final class DbalQueueTest extends TestCase
         $job = new Job(
             new Identifier('rm-3'),
             new Name('fiz:biz'),
-            [],
+            new DynamicCompositeValueObject([]),
             new Unsigned(2),
         );
 
