@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit
-        bootstrap="vendor/autoload.php"
-        colors="true"
->
-    <php>
-        <ini name="assert.exception" value="1" />
-    </php>
-    <testsuites>
-        <testsuite name="Less test suite">
-            <directory>test/</directory>
-        </testsuite>
-    </testsuites>
-    <coverage>
-        <include>
-            <directory suffix=".php">src/</directory>
-        </include>
-    </coverage>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="vendor/autoload.php" colors="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd">
+  <php>
+    <ini name="assert.exception" value="1"/>
+  </php>
+  <testsuites>
+    <testsuite name="Less test suite">
+      <directory>test/</directory>
+    </testsuite>
+  </testsuites>
+  <coverage/>
+  <source>
+    <include>
+      <directory suffix=".php">src/</directory>
+    </include>
+  </source>
 </phpunit>

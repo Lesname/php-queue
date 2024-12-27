@@ -4,20 +4,19 @@ declare(strict_types=1);
 namespace LessQueue;
 
 use LessQueue\Job\Job;
+use LessQueue\Response\Jobs;
 use LessQueue\Job\Property\Identifier;
 use LessQueue\Job\Property\Name;
 use LessQueue\Parameter\Priority;
 use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Int\Date\Timestamp;
+use LessValueObject\Composite\DynamicCompositeValueObject;
 
 interface Queue
 {
-    /**
-     * @param array<mixed> $data
-     */
-    public function publish(Name $name, array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void;
+    public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void;
 
-    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void;
+    public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void;
 
     /**
      * @param callable(Job $job): void $callback
@@ -29,7 +28,7 @@ interface Queue
     public function stopProcessing(): void;
 
     /**
-     * Returns amount of processors can be diverent thread/process
+     * Returns amount of processors can be different thread/process
      */
     public function countProcessing(): int;
 
@@ -44,8 +43,5 @@ interface Queue
 
     public function reanimate(Identifier $id, ?Timestamp $until = null): void;
 
-    /**
-     * @return array<Job>
-     */
-    public function getBuried(Paginate $paginate): array;
+    public function getBuried(Paginate $paginate): Jobs;
 }

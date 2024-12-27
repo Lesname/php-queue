@@ -3,10 +3,13 @@ declare(strict_types=1);
 
 namespace LessQueue;
 
+use LessQueue\Response\Jobs;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use ErrorException;
+use LessValueObject\Number\Exception\NotMultipleOf;
 use LessDatabase\Query\Builder\Applier\PaginateApplier;
+use LessValueObject\Composite\DynamicCompositeValueObject;
 use LessDatabase\Query\Builder\Applier\Values\InsertValuesApplier;
 use LessQueue\Job\Job;
 use LessQueue\Job\Property\Identifier;
@@ -15,7 +18,6 @@ use LessQueue\Parameter\Priority;
 use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\Date\Timestamp;
 use LessValueObject\Number\Int\Unsigned;
 use LessValueObject\String\Exception\TooLong;
@@ -32,31 +34,32 @@ final class RabbitMqQueue implements Queue
 {
     private ?AMQPChannel $channel = null;
 
-    private const QUEUE = 'less.queue';
-    private const EXCHANGE = 'base_exchange';
+    private const string QUEUE = 'less.queue';
+    private const string EXCHANGE = 'base_exchange';
 
-    private const TABLE = 'queue_job_buried';
+    private const string TABLE = 'queue_job_buried';
 
     public function __construct(
         private readonly AMQPStreamConnection $connection,
         private readonly Connection $database,
     ) {}
 
-    public function publish(Name $name, array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
+    public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $this->put(
             serialize(
                 [
                     'name' => $name,
                     'data' => $data,
-                    'attempt' => 1,
+                    'attempt' => 0,
                 ],
             ),
             $until,
+            $priority,
         );
     }
 
-    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void
+    public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void
     {
         $this->put(
             serialize(
@@ -67,14 +70,18 @@ final class RabbitMqQueue implements Queue
                 ],
             ),
             $until,
+            $priority,
         );
     }
 
-    private function put(string $body, ?Timestamp $until = null): void
+    private function put(string $body, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $message = new AMQPMessage(
             $body,
-            ['delivery_mode' => 2],
+            [
+                'priority' => ($priority ?? Priority::normal())->getValue(),
+                'delivery_mode' => 2,
+            ],
         );
 
         if ($until && $until->getValue() >= time()) {
@@ -93,18 +100,23 @@ final class RabbitMqQueue implements Queue
         $this->getChannel()->basic_consume(
             self::QUEUE,
             callback: function (AMQPMessage $message) use ($callback) {
-                $decoded = unserialize($message->body);
+                $decoded = unserialize($message->getBody());
                 assert(is_array($decoded));
 
                 assert($decoded['name'] instanceof Name);
-                assert(is_array($decoded['data']));
                 assert(is_int($decoded['attempt']));
+
+                $data = $decoded['data'];
+
+                if (!$data instanceof DynamicCompositeValueObject) {
+                    throw new RuntimeException();
+                }
 
                 $callback(
                     new Job(
                         new Identifier('rm-' . $message->getDeliveryTag()),
                         $decoded['name'],
-                        $decoded['data'],
+                        $data,
                         new Unsigned($decoded['attempt']),
                     ),
                 );
@@ -160,6 +172,39 @@ final class RabbitMqQueue implements Queue
     }
 
     /**
+     * @return int<0, max>
+     *
+     * @throws Exception
+     */
+    public function countBuried(): int
+    {
+        $result = $this
+            ->database
+            ->createQueryBuilder()
+            ->select('count(*)')
+            ->from(self::TABLE)
+            ->fetchOne();
+
+        if ($result === false) {
+            throw new RuntimeException();
+        }
+
+        if (is_string($result) && ctype_digit($result)) {
+            $result = (int) $result;
+        }
+
+        if (!is_int($result)) {
+            throw new RuntimeException();
+        }
+
+        if ($result < 0) {
+            throw new RuntimeException();
+        }
+
+        return $result;
+    }
+
+    /**
      * @throws Exception
      */
     public function delete(Identifier | Job $item): void
@@ -210,9 +255,9 @@ final class RabbitMqQueue implements Queue
      * @throws MaxOutBounds
      * @throws MinOutBounds
      * @throws NotFormat
-     * @throws PrecisionOutBounds
      * @throws TooLong
      * @throws TooShort
+     * @throws NotMultipleOf
      */
     public function reanimate(Identifier $id, ?Timestamp $until = null): void
     {
@@ -234,14 +279,14 @@ final class RabbitMqQueue implements Queue
         }
 
         $job = $this->hydrate($result);
-        $this->republish($job, $until);
+        $this->republish($job, $until ?? Timestamp::now());
         $this->delete($job);
     }
 
     /**
      * @throws Exception
      */
-    public function getBuried(Paginate $paginate): array
+    public function getBuried(Paginate $paginate): Jobs
     {
         $builder = $this->database->createQueryBuilder();
         (new PaginateApplier($paginate))->apply($builder);
@@ -254,19 +299,22 @@ final class RabbitMqQueue implements Queue
             ->from(self::TABLE)
             ->fetchAllAssociative();
 
-        return array_map(
-            $this->hydrate(...),
-            $results,
+        return new Jobs(
+            array_map(
+                $this->hydrate(...),
+                $results,
+            ),
+            $this->countBuried(),
         );
     }
 
     /**
      * @param array<mixed> $result
      *
+     * @throws NotMultipleOf
      * @throws MaxOutBounds
      * @throws MinOutBounds
      * @throws NotFormat
-     * @throws PrecisionOutBounds
      * @throws TooLong
      * @throws TooShort
      */
@@ -277,13 +325,16 @@ final class RabbitMqQueue implements Queue
         assert(is_string($result['data']));
         assert(is_int($result['attempt']));
 
-        $unserialized = unserialize($result['data']);
-        assert(is_array($unserialized));
+        $data = unserialize($result['data']);
+
+        if (!$data instanceof DynamicCompositeValueObject) {
+            throw new RuntimeException();
+        }
 
         return new Job(
             new Identifier($result['id']),
             new Name($result['name']),
-            $unserialized,
+            $data,
             new Unsigned($result['attempt']),
         );
     }

@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 namespace LessQueue;
 
+use LessQueue\Response\Jobs;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Query\QueryBuilder;
+use LessValueObject\Number\Exception\NotMultipleOf;
 use LessDatabase\Query\Builder\Applier\PaginateApplier;
 use LessQueue\Job\Job;
 use LessQueue\Job\Property\Identifier;
@@ -14,17 +16,17 @@ use LessQueue\Parameter\Priority;
 use LessValueObject\Composite\Paginate;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\Date\Timestamp;
 use LessValueObject\Number\Int\Unsigned;
 use LessValueObject\String\Exception\TooLong;
 use LessValueObject\String\Exception\TooShort;
 use LessValueObject\String\Format\Exception\NotFormat;
 use RuntimeException;
+use LessValueObject\Composite\DynamicCompositeValueObject;
 
 final class DbalQueue implements Queue
 {
-    private const TABLE = 'queue_job';
+    private const string TABLE = 'queue_job';
 
     private bool $processing = false;
 
@@ -32,11 +34,9 @@ final class DbalQueue implements Queue
     {}
 
     /**
-     * @param array<mixed> $data
-     *
      * @throws Exception
      */
-    public function publish(Name $name, array $data = [], ?Timestamp $until = null, ?Priority $priority = null): void
+    public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $builder = $this->connection->createQueryBuilder();
         $builder
@@ -55,7 +55,7 @@ final class DbalQueue implements Queue
                     'name' => $name,
                     'data' => serialize($data),
                     'until' => $until,
-                    'priority' => $priority,
+                    'priority' => $priority ?? Priority::normal(),
                 ],
             )
             ->executeStatement();
@@ -64,7 +64,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
-    public function republish(Job $job, ?Timestamp $until = null, ?Priority $priority = null): void
+    public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void
     {
         $builder = $this->connection->createQueryBuilder();
         $builder
@@ -84,7 +84,7 @@ final class DbalQueue implements Queue
                     'name' => $job->name,
                     'data' => serialize($job->data),
                     'until' => $until,
-                    'attempt' => $job->attempt,
+                    'attempt' => $job->attempt->getValue() + 1,
                     'priority' => $priority,
                 ],
             )
@@ -96,9 +96,9 @@ final class DbalQueue implements Queue
      * @throws MaxOutBounds
      * @throws MinOutBounds
      * @throws NotFormat
-     * @throws PrecisionOutBounds
      * @throws TooLong
      * @throws TooShort
+     * @throws NotMultipleOf
      */
     public function process(callable $callback): void
     {
@@ -236,17 +236,49 @@ final class DbalQueue implements Queue
     }
 
     /**
-     * @return array<Job>
+     * @return int<0, max>
      *
+     * @throws Exception
+     */
+    public function countBuried(): int
+    {
+        $result = $this
+            ->connection
+            ->createQueryBuilder()
+            ->select('count(*)')
+            ->from('queue_job')
+            ->andWhere('state = "buried"')
+            ->fetchOne();
+
+        if ($result === false) {
+            throw new RuntimeException();
+        }
+
+        if (is_string($result) && ctype_digit($result)) {
+            $result = (int)$result;
+        }
+
+        if (!is_int($result)) {
+            throw new RuntimeException();
+        }
+
+        if ($result < 0) {
+            throw new RuntimeException();
+        }
+
+        return $result;
+    }
+
+    /**
+     * @throws NotMultipleOf
      * @throws Exception
      * @throws MaxOutBounds
      * @throws MinOutBounds
      * @throws NotFormat
-     * @throws PrecisionOutBounds
      * @throws TooLong
      * @throws TooShort
      */
-    public function getBuried(Paginate $paginate): array
+    public function getBuried(Paginate $paginate): Jobs
     {
         $builder = $this->connection->createQueryBuilder();
         (new PaginateApplier($paginate))->apply($builder);
@@ -260,24 +292,30 @@ final class DbalQueue implements Queue
             ->addOrderBy('id', 'ASC')
             ->fetchAllAssociative();
 
-        return array_map(
-            function (array $result): Job {
-                assert(is_string($result['id']) || is_int($result['id']), 'Expected string id');
-                assert(is_string($result['name']), 'Expected string name');
-                assert(is_string($result['attempt']) || is_int($result['attempt']), 'Expected attempt');
+        return new Jobs(
+            array_map(
+                function (array $result): Job {
+                    assert(is_string($result['id']) || is_int($result['id']), 'Expected string id');
+                    assert(is_string($result['name']), 'Expected string name');
+                    assert(is_string($result['attempt']) || is_int($result['attempt']), 'Expected attempt');
 
-                assert(is_string($result['data']), 'Expected string data');
-                $data = unserialize($result['data']);
-                assert(is_array($data), 'Expected unserialized array for data');
+                    assert(is_string($result['data']), 'Expected string data');
+                    $data = unserialize($result['data']);
 
-                return new Job(
-                    new Identifier((string)$result['id']),
-                    new Name($result['name']),
-                    $data,
-                    new Unsigned((int)$result['attempt']),
-                );
-            },
-            $results,
+                    if (!$data instanceof DynamicCompositeValueObject) {
+                        throw new RuntimeException();
+                    }
+
+                    return new Job(
+                        new Identifier((string)$result['id']),
+                        new Name($result['name']),
+                        $data,
+                        new Unsigned((int)$result['attempt']),
+                    );
+                },
+                $results,
+            ),
+            $this->countBuried(),
         );
     }
 
@@ -285,10 +323,10 @@ final class DbalQueue implements Queue
      * @throws Exception
      * @throws MaxOutBounds
      * @throws MinOutBounds
-     * @throws PrecisionOutBounds
+     * @throws NotFormat
      * @throws TooLong
      * @throws TooShort
-     * @throws NotFormat
+     * @throws NotMultipleOf
      */
     private function findProcessableJob(): ?Job
     {
@@ -313,7 +351,10 @@ final class DbalQueue implements Queue
 
             assert(is_string($result['data']));
             $data = unserialize($result['data']);
-            assert(is_array($data));
+
+            if (!$data instanceof DynamicCompositeValueObject) {
+                throw new RuntimeException();
+            }
 
             return new Job(
                 new Identifier((string)$result['id']),

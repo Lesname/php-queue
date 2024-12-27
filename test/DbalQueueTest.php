@@ -13,10 +13,11 @@ use LessQueue\Job\Property\Name;
 use LessQueue\Parameter\Priority;
 use LessValueObject\Number\Exception\MaxOutBounds;
 use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Exception\PrecisionOutBounds;
 use LessValueObject\Number\Int\Date\Timestamp;
 use LessValueObject\Number\Int\Unsigned;
 use PHPUnit\Framework\TestCase;
+use LessValueObject\Number\Exception\NotMultipleOf;
+use LessValueObject\Composite\DynamicCompositeValueObject;
 
 /**
  * @covers \LessQueue\DbalQueue
@@ -27,12 +28,13 @@ final class DbalQueueTest extends TestCase
      * @throws Exception
      * @throws MaxOutBounds
      * @throws MinOutBounds
-     * @throws PrecisionOutBounds
+     * @throws NotMultipleOf
+     * @throws \PHPUnit\Framework\MockObject\Exception
      */
     public function testPut(): void
     {
         $name = new Name('fiz:biz');
-        $data = [];
+        $data = new DynamicCompositeValueObject([]);
         $until = new Timestamp(1);
         $priority = new Priority(4);
 
@@ -91,7 +93,7 @@ final class DbalQueueTest extends TestCase
     public function testPutDefault(): void
     {
         $name = new Name('fiz:bar');
-        $data = [];
+        $data = new DynamicCompositeValueObject([]);
 
         $builder = $this->createMock(QueryBuilder::class);
         $builder
@@ -126,7 +128,7 @@ final class DbalQueueTest extends TestCase
                     'name' => $name,
                     'data' => serialize($data),
                     'until' => null,
-                    'priority' => null,
+                    'priority' => Priority::normal(),
                 ],
             )
             ->willReturn($builder);
@@ -146,7 +148,8 @@ final class DbalQueueTest extends TestCase
      * @throws Exception
      * @throws MaxOutBounds
      * @throws MinOutBounds
-     * @throws PrecisionOutBounds
+     * @throws NotMultipleOf
+     * @throws \PHPUnit\Framework\MockObject\Exception
      */
     public function testDeleteViaJob(): void
     {
@@ -182,7 +185,7 @@ final class DbalQueueTest extends TestCase
         $job = new Job(
             new Identifier('3'),
             new Name('foo:bar'),
-            [],
+            new DynamicCompositeValueObject([]),
             new Unsigned(1),
         );
 
@@ -192,6 +195,10 @@ final class DbalQueueTest extends TestCase
 
     /**
      * @throws Exception
+     * @throws MaxOutBounds
+     * @throws MinOutBounds
+     * @throws NotMultipleOf
+     * @throws \PHPUnit\Framework\MockObject\Exception
      */
     public function testBury(): void
     {
@@ -227,7 +234,7 @@ final class DbalQueueTest extends TestCase
         $job = new Job(
             new Identifier('rm-3'),
             new Name('fiz:biz'),
-            [],
+            new DynamicCompositeValueObject([]),
             new Unsigned(2),
         );
 

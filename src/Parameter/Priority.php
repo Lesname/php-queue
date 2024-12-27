@@ -10,12 +10,12 @@ use LessValueObject\Number\Int\AbstractIntValueObject;
  */
 final class Priority extends AbstractIntValueObject
 {
-    public static function normal(): self
+    public static function low(): self
     {
-        return new self(0);
+        return new self(1);
     }
 
-    public static function low(): self
+    public static function normal(): self
     {
         return new self(2);
     }
@@ -33,7 +33,7 @@ final class Priority extends AbstractIntValueObject
     /**
      * @psalm-pure
      */
-    public static function getMinValue(): int
+    public static function getMinimumValue(): int
     {
         return 0;
     }
@@ -41,7 +41,7 @@ final class Priority extends AbstractIntValueObject
     /**
      * @psalm-pure
      */
-    public static function getMaxValue(): int
+    public static function getMaximumValue(): int
     {
         return 5;
     }
