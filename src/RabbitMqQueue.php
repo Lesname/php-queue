@@ -1,28 +1,29 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueue;
+namespace LesQueue;
 
-use LessQueue\Response\Jobs;
+use Override;
+use LesQueue\Response\Jobs;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use ErrorException;
-use LessValueObject\Number\Exception\NotMultipleOf;
-use LessDatabase\Query\Builder\Applier\PaginateApplier;
-use LessValueObject\Composite\DynamicCompositeValueObject;
-use LessDatabase\Query\Builder\Applier\Values\InsertValuesApplier;
-use LessQueue\Job\Job;
-use LessQueue\Job\Property\Identifier;
-use LessQueue\Job\Property\Name;
-use LessQueue\Parameter\Priority;
-use LessValueObject\Composite\Paginate;
-use LessValueObject\Number\Exception\MaxOutBounds;
-use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Int\Date\Timestamp;
-use LessValueObject\Number\Int\Unsigned;
-use LessValueObject\String\Exception\TooLong;
-use LessValueObject\String\Exception\TooShort;
-use LessValueObject\String\Format\Exception\NotFormat;
+use LesValueObject\Number\Exception\NotMultipleOf;
+use LesDatabase\Query\Builder\Applier\PaginateApplier;
+use LesValueObject\Composite\DynamicCompositeValueObject;
+use LesDatabase\Query\Builder\Applier\Values\InsertValuesApplier;
+use LesQueue\Job\Job;
+use LesQueue\Job\Property\Identifier;
+use LesQueue\Job\Property\Name;
+use LesQueue\Parameter\Priority;
+use LesValueObject\Composite\Paginate;
+use LesValueObject\Number\Exception\MaxOutBounds;
+use LesValueObject\Number\Exception\MinOutBounds;
+use LesValueObject\Number\Int\Date\Timestamp;
+use LesValueObject\Number\Int\Unsigned;
+use LesValueObject\String\Exception\TooLong;
+use LesValueObject\String\Exception\TooShort;
+use LesValueObject\String\Format\Exception\NotFormat;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Exchange\AMQPExchangeType;
@@ -34,7 +35,7 @@ final class RabbitMqQueue implements Queue
 {
     private ?AMQPChannel $channel = null;
 
-    private const string QUEUE = 'less.queue';
+    private const string QUEUE = 'les.queue';
     private const string EXCHANGE = 'base_exchange';
 
     private const string TABLE = 'queue_job_buried';
@@ -44,6 +45,7 @@ final class RabbitMqQueue implements Queue
         private readonly Connection $database,
     ) {}
 
+    #[Override]
     public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $this->put(
@@ -59,6 +61,7 @@ final class RabbitMqQueue implements Queue
         );
     }
 
+    #[Override]
     public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void
     {
         $this->put(
@@ -66,7 +69,7 @@ final class RabbitMqQueue implements Queue
                 [
                     'name' => $job->name,
                     'data' => $job->data,
-                    'attempt' => $job->attempt->getValue() + 1,
+                    'attempt' => $job->attempt->value + 1,
                 ],
             ),
             $until,
@@ -79,13 +82,13 @@ final class RabbitMqQueue implements Queue
         $message = new AMQPMessage(
             $body,
             [
-                'priority' => ($priority ?? Priority::normal())->getValue(),
+                'priority' => ($priority ?? Priority::normal())->value,
                 'delivery_mode' => 2,
             ],
         );
 
-        if ($until && $until->getValue() >= time()) {
-            $headers = new AMQPTable(['x-delay' => ($until->getValue() - time()) * 1000]);
+        if ($until && $until->value >= time()) {
+            $headers = new AMQPTable(['x-delay' => ($until->value - time()) * 1000]);
             $message->set('application_headers', $headers);
         }
 
@@ -95,6 +98,7 @@ final class RabbitMqQueue implements Queue
     /**
      * @throws ErrorException
      */
+    #[Override]
     public function process(callable $callback): void
     {
         $this->getChannel()->basic_consume(
@@ -126,12 +130,14 @@ final class RabbitMqQueue implements Queue
         $this->getChannel()->consume();
     }
 
+    #[Override]
     public function isProcessing(): bool
     {
         return $this->channel instanceof AMQPChannel
             && $this->getChannel()->is_consuming();
     }
 
+    #[Override]
     public function stopProcessing(): void
     {
         if (!$this->isProcessing()) {
@@ -141,6 +147,7 @@ final class RabbitMqQueue implements Queue
         $this->getChannel()->stopConsume();
     }
 
+    #[Override]
     public function countProcessing(): int
     {
         $result = $this
@@ -156,6 +163,7 @@ final class RabbitMqQueue implements Queue
         return $result[2];
     }
 
+    #[Override]
     public function countProcessable(): int
     {
         $result = $this
@@ -176,7 +184,7 @@ final class RabbitMqQueue implements Queue
      *
      * @throws Exception
      */
-    public function countBuried(): int
+    private function countBuried(): int
     {
         $result = $this
             ->database
@@ -207,14 +215,15 @@ final class RabbitMqQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function delete(Identifier | Job $item): void
     {
         $id = $item instanceof Job
             ? $item->id
             : $item;
 
-        $idType = substr($id->getValue(), 0, 2);
-        $idValue = substr($id->getValue(), 3);
+        $idType = substr($id->value, 0, 2);
+        $idValue = substr($id->value, 3);
 
         if ($idType === 'rm') {
             $this->getChannel()->basic_ack((int)$idValue);
@@ -233,6 +242,7 @@ final class RabbitMqQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function bury(Job $job): void
     {
         $applier = new InsertValuesApplier(
@@ -259,9 +269,10 @@ final class RabbitMqQueue implements Queue
      * @throws TooShort
      * @throws NotMultipleOf
      */
+    #[Override]
     public function reanimate(Identifier $id, ?Timestamp $until = null): void
     {
-        $dbId = substr($id->getValue(), 3);
+        $dbId = substr($id->value, 3);
 
         $selectBuilder = $this->database->createQueryBuilder();
         $result = $selectBuilder
@@ -286,6 +297,7 @@ final class RabbitMqQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function getBuried(Paginate $paginate): Jobs
     {
         $builder = $this->database->createQueryBuilder();

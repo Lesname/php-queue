@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueue\Job;
+namespace LesQueue\Job;
 
-use LessValueObject\Composite\DynamicCompositeValueObject;
-use LessValueObject\Composite\AbstractCompositeValueObject;
-use LessValueObject\Number\Int\Unsigned;
+use LesValueObject\Composite\DynamicCompositeValueObject;
+use LesValueObject\Composite\AbstractCompositeValueObject;
+use LesValueObject\Number\Int\Unsigned;
 
 /**
  * @psalm-immutable

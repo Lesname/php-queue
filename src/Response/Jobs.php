@@ -1,14 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueue\Response;
+namespace LesQueue\Response;
 
+use Override;
 use Countable;
 use Traversable;
 use ArrayIterator;
 use JsonSerializable;
 use IteratorAggregate;
-use LessQueue\Job\Job;
+use LesQueue\Job\Job;
 
 /**
  * @implements IteratorAggregate<Job>
@@ -27,16 +28,19 @@ final class Jobs implements IteratorAggregate, Countable, JsonSerializable
     /**
      * @return Traversable<Job>
      */
+    #[Override]
     public function getIterator(): Traversable
     {
         return new ArrayIterator($this->jobs);
     }
 
+    #[Override]
     public function jsonSerialize(): mixed
     {
         return $this->jobs;
     }
 
+    #[Override]
     public function count(): int
     {
         return $this->count;

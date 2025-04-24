@@ -1,28 +1,29 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueue;
+namespace LesQueue;
 
-use LessQueue\Response\Jobs;
+use Override;
+use LesQueue\Response\Jobs;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Query\QueryBuilder;
-use LessValueObject\Number\Exception\NotMultipleOf;
-use LessDatabase\Query\Builder\Applier\PaginateApplier;
-use LessQueue\Job\Job;
-use LessQueue\Job\Property\Identifier;
-use LessQueue\Job\Property\Name;
-use LessQueue\Parameter\Priority;
-use LessValueObject\Composite\Paginate;
-use LessValueObject\Number\Exception\MaxOutBounds;
-use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Int\Date\Timestamp;
-use LessValueObject\Number\Int\Unsigned;
-use LessValueObject\String\Exception\TooLong;
-use LessValueObject\String\Exception\TooShort;
-use LessValueObject\String\Format\Exception\NotFormat;
+use LesValueObject\Number\Exception\NotMultipleOf;
+use LesDatabase\Query\Builder\Applier\PaginateApplier;
+use LesQueue\Job\Job;
+use LesQueue\Job\Property\Identifier;
+use LesQueue\Job\Property\Name;
+use LesQueue\Parameter\Priority;
+use LesValueObject\Composite\Paginate;
+use LesValueObject\Number\Exception\MaxOutBounds;
+use LesValueObject\Number\Exception\MinOutBounds;
+use LesValueObject\Number\Int\Date\Timestamp;
+use LesValueObject\Number\Int\Unsigned;
+use LesValueObject\String\Exception\TooLong;
+use LesValueObject\String\Exception\TooShort;
+use LesValueObject\String\Format\Exception\NotFormat;
 use RuntimeException;
-use LessValueObject\Composite\DynamicCompositeValueObject;
+use LesValueObject\Composite\DynamicCompositeValueObject;
 
 final class DbalQueue implements Queue
 {
@@ -36,6 +37,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void
     {
         $builder = $this->connection->createQueryBuilder();
@@ -64,6 +66,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void
     {
         $builder = $this->connection->createQueryBuilder();
@@ -84,7 +87,7 @@ final class DbalQueue implements Queue
                     'name' => $job->name,
                     'data' => serialize($job->data),
                     'until' => $until,
-                    'attempt' => $job->attempt->getValue() + 1,
+                    'attempt' => $job->attempt->value + 1,
                     'priority' => $priority,
                 ],
             )
@@ -100,6 +103,7 @@ final class DbalQueue implements Queue
      * @throws TooShort
      * @throws NotMultipleOf
      */
+    #[Override]
     public function process(callable $callback): void
     {
         if ($this->processing) {
@@ -123,11 +127,13 @@ final class DbalQueue implements Queue
         $this->processing = false;
     }
 
+    #[Override]
     public function isProcessing(): bool
     {
         return $this->processing;
     }
 
+    #[Override]
     public function stopProcessing(): void
     {
         if ($this->isProcessing() === false) {
@@ -140,6 +146,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function countProcessing(): int
     {
         $result = $this
@@ -162,6 +169,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function countProcessable(): int
     {
         $builder = $this
@@ -187,6 +195,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function delete(Identifier | Job $item): void
     {
         $id = $item instanceof Job
@@ -204,6 +213,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function bury(Job $job): void
     {
         $builder = $this->connection->createQueryBuilder();
@@ -220,6 +230,7 @@ final class DbalQueue implements Queue
     /**
      * @throws Exception
      */
+    #[Override]
     public function reanimate(Identifier $id, ?Timestamp $until = null): void
     {
         $builder = $this->connection->createQueryBuilder();
@@ -240,7 +251,7 @@ final class DbalQueue implements Queue
      *
      * @throws Exception
      */
-    public function countBuried(): int
+    private function countBuried(): int
     {
         $result = $this
             ->connection
@@ -278,6 +289,7 @@ final class DbalQueue implements Queue
      * @throws TooLong
      * @throws TooShort
      */
+    #[Override]
     public function getBuried(Paginate $paginate): Jobs
     {
         $builder = $this->connection->createQueryBuilder();

@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueueTest\Job\Property;
+namespace LesQueueTest\Job\Property;
 
-use LessQueue\Job\Property\Name;
-use LessValueObject\String\Exception\TooLong;
-use LessValueObject\String\Exception\TooShort;
-use LessValueObject\String\Format\Exception\NotFormat;
+use LesQueue\Job\Property\Name;
+use LesValueObject\String\Exception\TooLong;
+use LesValueObject\String\Exception\TooShort;
+use LesValueObject\String\Format\Exception\NotFormat;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \LessQueue\Job\Property\Name
+ * @covers \LesQueue\Job\Property\Name
  */
 final class NameTest extends TestCase
 {

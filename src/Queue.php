@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueue;
+namespace LesQueue;
 
-use LessQueue\Job\Job;
-use LessQueue\Response\Jobs;
-use LessQueue\Job\Property\Identifier;
-use LessQueue\Job\Property\Name;
-use LessQueue\Parameter\Priority;
-use LessValueObject\Composite\Paginate;
-use LessValueObject\Number\Int\Date\Timestamp;
-use LessValueObject\Composite\DynamicCompositeValueObject;
+use LesQueue\Job\Job;
+use LesQueue\Response\Jobs;
+use LesQueue\Job\Property\Identifier;
+use LesQueue\Job\Property\Name;
+use LesQueue\Parameter\Priority;
+use LesValueObject\Composite\Paginate;
+use LesValueObject\Number\Int\Date\Timestamp;
+use LesValueObject\Composite\DynamicCompositeValueObject;
 
 interface Queue
 {

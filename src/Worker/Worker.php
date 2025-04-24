@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueue\Worker;
+namespace LesQueue\Worker;
 
-use LessQueue\Job\Job;
+use LesQueue\Job\Job;
 
 interface Worker
 {
