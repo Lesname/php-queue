@@ -1,9 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueue\Parameter;
+namespace LesQueue\Parameter;
 
-use LessValueObject\Number\Int\AbstractIntValueObject;
+use Override;
+use LesValueObject\Number\Int\AbstractIntValueObject;
 
 /**
  * @psalm-immutable
@@ -32,7 +33,7 @@ final class Priority extends AbstractIntValueObject
 
     /**
      * @psalm-pure
-     */
+     */    #[Override]
     public static function getMinimumValue(): int
     {
         return 0;
@@ -40,7 +41,7 @@ final class Priority extends AbstractIntValueObject
 
     /**
      * @psalm-pure
-     */
+     */    #[Override]
     public static function getMaximumValue(): int
     {
         return 5;

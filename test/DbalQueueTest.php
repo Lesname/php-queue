@@ -1,26 +1,26 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueueTest;
+namespace LesQueueTest;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Query\QueryBuilder;
-use LessQueue\DbalQueue;
-use LessQueue\Job\Job;
-use LessQueue\Job\Property\Identifier;
-use LessQueue\Job\Property\Name;
-use LessQueue\Parameter\Priority;
-use LessValueObject\Number\Exception\MaxOutBounds;
-use LessValueObject\Number\Exception\MinOutBounds;
-use LessValueObject\Number\Int\Date\Timestamp;
-use LessValueObject\Number\Int\Unsigned;
+use LesQueue\DbalQueue;
+use LesQueue\Job\Job;
+use LesQueue\Job\Property\Identifier;
+use LesQueue\Job\Property\Name;
+use LesQueue\Parameter\Priority;
+use LesValueObject\Number\Exception\MaxOutBounds;
+use LesValueObject\Number\Exception\MinOutBounds;
+use LesValueObject\Number\Int\Date\Timestamp;
+use LesValueObject\Number\Int\Unsigned;
 use PHPUnit\Framework\TestCase;
-use LessValueObject\Number\Exception\NotMultipleOf;
-use LessValueObject\Composite\DynamicCompositeValueObject;
+use LesValueObject\Number\Exception\NotMultipleOf;
+use LesValueObject\Composite\DynamicCompositeValueObject;
 
 /**
- * @covers \LessQueue\DbalQueue
+ * @covers \LesQueue\DbalQueue
  */
 final class DbalQueueTest extends TestCase
 {

@@ -1,9 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueue\Job\Property;
+namespace LesQueue\Job\Property;
 
-use LessValueObject\String\AbstractStringValueObject;
+use Override;
+use LesValueObject\String\AbstractStringValueObject;
 
 /**
  * @psalm-immutable
@@ -13,6 +14,7 @@ final class Identifier extends AbstractStringValueObject
     /**
      * @psalm-pure
      */
+    #[Override]
     public static function getMinimumLength(): int
     {
         return 1;
@@ -21,6 +23,7 @@ final class Identifier extends AbstractStringValueObject
     /**
      * @psalm-pure
      */
+    #[Override]
     public static function getMaximumLength(): int
     {
         return 11;

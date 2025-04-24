@@ -1,9 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace LessQueue\Job\Property;
+namespace LesQueue\Job\Property;
 
-use LessValueObject\String\Format\AbstractRegexStringFormatValueObject;
+use Override;
+use LesValueObject\String\Format\AbstractRegexStringFormatValueObject;
 
 /**
  * @psalm-immutable
@@ -13,6 +14,7 @@ final class Name extends AbstractRegexStringFormatValueObject
     /**
      * @psalm-pure
      */
+    #[Override]
     public static function getRegularExpression(): string
     {
         return '/^[a-z][a-zA-Z]*(\.[a-z][a-zA-Z]*)*:[a-z][a-zA-Z]*$/';
@@ -21,6 +23,7 @@ final class Name extends AbstractRegexStringFormatValueObject
     /**
      * @psalm-pure
      */
+    #[Override]
     public static function getMinimumLength(): int
     {
         return 3;
@@ -29,6 +32,7 @@ final class Name extends AbstractRegexStringFormatValueObject
     /**
      * @psalm-pure
      */
+    #[Override]
     public static function getMaximumLength(): int
     {
         return 50;
