@@ -113,7 +113,7 @@ final class RabbitMqQueue implements Queue
                 $data = $decoded['data'];
 
                 if (!$data instanceof DynamicCompositeValueObject) {
-                    throw new RuntimeException();
+                    throw new RuntimeException('Data not of DynamicCompositeValueObject type');
                 }
 
                 $callback(
