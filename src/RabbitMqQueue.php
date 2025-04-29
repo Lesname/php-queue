@@ -8,6 +8,7 @@ use LesQueue\Response\Jobs;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use ErrorException;
+use LesQueue\Exception\DecodeFailed;
 use LesValueObject\Number\Exception\NotMultipleOf;
 use LesDatabase\Query\Builder\Applier\PaginateApplier;
 use LesValueObject\Composite\DynamicCompositeValueObject;
@@ -104,35 +105,48 @@ final class RabbitMqQueue implements Queue
         $this->getChannel()->basic_consume(
             self::QUEUE,
             callback: function (AMQPMessage $message) use ($callback) {
-                $decoded = unserialize($message->getBody());
-                assert(is_array($decoded));
-
-                assert($decoded['name'] instanceof Name);
-                assert(is_int($decoded['attempt']));
-
-                $data = $decoded['data'];
-
-                if (!$data instanceof DynamicCompositeValueObject) {
-                    throw new RuntimeException(
-                        sprintf(
-                            "Data not of DynamicCompositeValueObject type, gotten '%s'",
-                            get_debug_type($data),
-                        ),
-                    );
-                }
-
-                $callback(
-                    new Job(
-                        new Identifier('rm-' . $message->getDeliveryTag()),
-                        $decoded['name'],
-                        $data,
-                        new Unsigned($decoded['attempt']),
-                    ),
-                );
+                $callback($this->makeJob($message));
             },
         );
 
         $this->getChannel()->consume();
+    }
+
+    /**
+     * @throws DecodeFailed
+     * @throws MaxOutBounds
+     * @throws MinOutBounds
+     * @throws NotMultipleOf
+     * @throws TooLong
+     * @throws TooShort
+     */
+    private function makeJob(AMQPMessage $message): Job
+    {
+        $id = new Identifier('rm-' . $message->getDeliveryTag());
+        $decoded = unserialize($message->getBody());
+
+        if (!is_array($decoded)) {
+            throw new DecodeFailed($id);
+        }
+
+        if (!$decoded['name'] instanceof Name) {
+            throw new DecodeFailed($id);
+        }
+
+        if (!is_int($decoded['attempt'])) {
+            throw new DecodeFailed($id);
+        }
+
+        if (!$decoded['data'] instanceof DynamicCompositeValueObject) {
+            throw new DecodeFailed($id);
+        }
+
+        return new Job(
+            $id,
+            $decoded['name'],
+            $decoded['data'],
+            new Unsigned($decoded['attempt']),
+        );
     }
 
     #[Override]
