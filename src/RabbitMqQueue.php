@@ -33,6 +33,9 @@ use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 use RuntimeException;
 
+/**
+ * @deprecated rabbit mq delayed message is deprecated
+ */
 final class RabbitMqQueue implements Queue
 {
     private ?AMQPChannel $channel = null;
