@@ -26,49 +26,22 @@ use LesValueObject\String\Format\Exception\NotFormat;
 use RuntimeException;
 use LesValueObject\Composite\DynamicCompositeValueObject;
 
-final class DbalQueue implements Queue
+final class DbalQueue extends AbstractQueue
 {
     private const string TABLE = 'queue_job';
 
     private bool $processing = false;
 
-    public function __construct(private readonly Connection $connection)
-    {}
+    public function __construct(
+        private readonly Connection $connection,
+    ) {}
+
 
     /**
      * @throws Exception
      */
     #[Override]
-    public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void
-    {
-        $builder = $this->connection->createQueryBuilder();
-        $builder
-            ->insert(self::TABLE)
-            ->values(
-                [
-                    'state' => '"ready"',
-                    'name' => ':name',
-                    'data' => ':data',
-                    'until' => ':until',
-                    'priority' => ':priority',
-                ],
-            )
-            ->setParameters(
-                [
-                    'name' => $name,
-                    'data' => serialize($data),
-                    'until' => $until,
-                    'priority' => $priority ?? Priority::normal(),
-                ],
-            )
-            ->executeStatement();
-    }
-
-    /**
-     * @throws Exception
-     */
-    #[Override]
-    public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void
+    protected function insert(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null, int $attempt = 0): void
     {
         $builder = $this->connection->createQueryBuilder();
         $builder
@@ -85,10 +58,10 @@ final class DbalQueue implements Queue
             )
             ->setParameters(
                 [
-                    'name' => $job->name,
-                    'data' => serialize($job->data),
+                    'name' => $name,
+                    'data' => serialize($data),
                     'until' => $until,
-                    'attempt' => $job->attempt->value + 1,
+                    'attempt' => $attempt,
                     'priority' => $priority,
                 ],
             )
