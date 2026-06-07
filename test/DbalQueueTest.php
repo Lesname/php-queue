@@ -60,6 +60,7 @@ final class DbalQueueTest extends TestCase
                     'data' => ':data',
                     'until' => ':until',
                     'priority' => ':priority',
+                    'attempt' => ':attempt',
                 ],
             )
             ->willReturn($builder);
@@ -73,6 +74,7 @@ final class DbalQueueTest extends TestCase
                     'data' => serialize($data),
                     'until' => $until,
                     'priority' => $priority,
+                    'attempt' => 0,
                 ]
             )
             ->willReturn($builder);
@@ -117,6 +119,7 @@ final class DbalQueueTest extends TestCase
                     'data' => ':data',
                     'until' => ':until',
                     'priority' => ':priority',
+                    'attempt' => ':attempt',
                 ],
             )
             ->willReturn($builder);
@@ -129,6 +132,7 @@ final class DbalQueueTest extends TestCase
                     'name' => $name,
                     'data' => serialize($data),
                     'until' => null,
+                    'attempt' => 0,
                     'priority' => Priority::normal(),
                 ],
             )

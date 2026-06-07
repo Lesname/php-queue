@@ -62,7 +62,7 @@ final class DbalQueue extends AbstractQueue
                     'data' => serialize($data),
                     'until' => $until,
                     'attempt' => $attempt,
-                    'priority' => $priority,
+                    'priority' => $priority ?? Priority::normal(),
                 ],
             )
             ->executeStatement();
