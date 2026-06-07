@@ -12,39 +12,54 @@ use LesValueObject\Number\Int\AbstractIntValueObject;
  */
 final class Priority extends AbstractIntValueObject
 {
+    public static function none(): self
+    {
+        return new self(-32);
+    }
+
     public static function low(): self
     {
-        return new self(1);
+        return new self(-8);
     }
 
     public static function normal(): self
     {
-        return new self(2);
+        return new self(0);
     }
 
     public static function medium(): self
     {
-        return new self(3);
+        return new self(8);
     }
 
+    /**
+     * @deprecated use highest
+     */
     public static function high(): self
     {
-        return new self(4);
+        return new self(8);
+    }
+
+    public static function highest(): self
+    {
+        return new self(32);
     }
 
     /**
      * @psalm-pure
-     */    #[Override]
+     */
+    #[Override]
     public static function getMinimumValue(): int
     {
-        return 0;
+        return -32;
     }
 
     /**
      * @psalm-pure
-     */    #[Override]
+     */
+    #[Override]
     public static function getMaximumValue(): int
     {
-        return 5;
+        return 32;
     }
 }
