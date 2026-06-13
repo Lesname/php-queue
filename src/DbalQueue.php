@@ -381,9 +381,9 @@ final class DbalQueue extends AbstractQueue
         state = 'ready' 
         AND 
         (
-            `until` IS NULL 
+            "until" IS NULL 
             OR 
-            `until` < unix_timestamp()
+            "until" < unix_timestamp()
         )
     ) 
     OR
