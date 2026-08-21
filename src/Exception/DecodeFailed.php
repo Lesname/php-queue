@@ -9,6 +9,8 @@ use LesQueue\Job\Property\Identifier;
 
 /**
  * @psalm-immutable
+ *
+ * @psalm-suppress MutableDependency
  */
 final class DecodeFailed extends Exception implements QueueException
 {
