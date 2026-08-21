@@ -45,6 +45,9 @@ final class RabbitMqQueue implements Queue
 
     private const string TABLE = 'queue_job_buried';
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly AMQPStreamConnection $connection,
         private readonly Connection $database,
@@ -313,7 +316,7 @@ final class RabbitMqQueue implements Queue
         }
 
         $job = $this->hydrate($result);
-        $this->republish($job, $until ?? Timestamp::now());
+        $this->republish($job, $until ?? new Timestamp(time()));
         $this->delete($job);
     }
 

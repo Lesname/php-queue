@@ -13,6 +13,9 @@ use LesValueObject\Composite\DynamicCompositeValueObject;
 
 abstract class AbstractQueue implements Queue
 {
+    /**
+     * @psalm-impure
+     */
     #[Override]
     public function publish(Name $name, DynamicCompositeValueObject $data, ?Timestamp $until = null, ?Priority $priority = null): void
     {
@@ -24,6 +27,9 @@ abstract class AbstractQueue implements Queue
         );
     }
 
+    /**
+     * @psalm-impure
+     */
     #[Override]
     public function republish(Job $job, Timestamp $until, ?Priority $priority = null): void
     {
@@ -36,6 +42,9 @@ abstract class AbstractQueue implements Queue
         );
     }
 
+    /**
+     * @psalm-impure
+     */
     abstract protected function insert(
         Name $name,
         DynamicCompositeValueObject $data,

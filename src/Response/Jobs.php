@@ -20,6 +20,8 @@ final class Jobs implements IteratorAggregate, Countable, JsonSerializable
     /**
      * @param array<Job> $jobs
      * @param int<0, max> $count
+     *
+     * @psalm-mutation-free
      */
     public function __construct(
         private readonly array $jobs,

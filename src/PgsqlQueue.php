@@ -121,6 +121,8 @@ SQL;
      * Max listen is a signed 32bit integer, so 2.147.483 seconds.
      *
      * @see https://www.php.net/manual/en/pdo-pgsql.getnotify.php
+     *
+     * @psalm-external-mutation-free
      */
     public function setListen(int $listen): void
     {
@@ -133,6 +135,8 @@ SQL;
 
     /**
      * Max release is set to 30 days
+     *
+     * @psalm-external-mutation-free
      */
     public function setRelease(int $release): void
     {
@@ -242,6 +246,9 @@ SQL;
         return $this->processing;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function stopProcessing(): void
     {
@@ -250,6 +257,9 @@ SQL;
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     #[Override]
     public function countProcessing(): int
     {

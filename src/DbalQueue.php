@@ -32,6 +32,9 @@ final class DbalQueue extends AbstractQueue
 
     private bool $processing = false;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function __construct(
         private readonly Connection $connection,
     ) {}
@@ -107,6 +110,9 @@ final class DbalQueue extends AbstractQueue
         return $this->processing;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     #[Override]
     public function stopProcessing(): void
     {
