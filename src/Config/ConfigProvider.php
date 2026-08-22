@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LesQueue\Config;
 
+use LesQueue\Queue;
 use LesQueue\DbalQueue;
 use LesQueue\PgsqlQueue;
 use LesQueue\RabbitMqQueue;
@@ -17,6 +18,12 @@ use LesQueue\Config\Factory\RabbitMqQueueFactory;
 final class ConfigProvider
 {
     /**
+     * @param class-string<Queue> $useQueue
+     */
+    public function __construct(private readonly string $useQueue)
+    {}
+
+    /**
      * @return array<string, mixed>
      *
      * @psalm-pure
@@ -27,6 +34,9 @@ final class ConfigProvider
     {
         return [
             'dependencies' => [
+                'aliases' => [
+                    Queue::class => $this->useQueue,
+                ],
                 'factories' => [
                     // @phpstan-ignore-next-line
                     RabbitMqQueue::class => RabbitMqQueueFactory::class,
