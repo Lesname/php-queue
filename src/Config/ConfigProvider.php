@@ -19,6 +19,8 @@ final class ConfigProvider
 {
     /**
      * @param class-string<Queue> $useQueue
+     *
+     * @psalm-pure
      */
     public function __construct(private readonly string $useQueue)
     {}
@@ -26,7 +28,7 @@ final class ConfigProvider
     /**
      * @return array<string, mixed>
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      *
      * @psalm-suppress DeprecatedClass
      */
