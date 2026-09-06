@@ -327,6 +327,8 @@ SQL,
         $statement->bindValue('limit', $paginate->perPage->value, PDO::PARAM_INT);
         $statement->bindValue('offset', $paginate->getSkipped(), PDO::PARAM_INT);
 
+        $statement->execute();
+
         $results = $statement->fetchAll(PDO::FETCH_ASSOC);
         $hydrator = $this->getHydrator();
         $jobs = [];
